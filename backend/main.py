@@ -20,8 +20,8 @@ app = FastAPI(
 # CORS configuration for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://helixvault-omega.vercel.app"],
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all Vercel deployment URLs
+    allow_credentials=False, # We use JWT tokens in headers, not cookies, so False allows "*" to work safely
     allow_methods=["*"],
     allow_headers=["*"],
 )
