@@ -41,7 +41,8 @@ def send_otp_email(to_email: str, otp: str):
     msg["To"] = to_email
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        # Added timeout=3 to prevent hanging on Render Free Tier (blocks port 587)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=3)
         server.starttls()
         server.login(str(SMTP_EMAIL), str(SMTP_PASSWORD))
         server.send_message(msg)
@@ -49,5 +50,6 @@ def send_otp_email(to_email: str, otp: str):
         return True
     except Exception as e:
         print(f"Error sending email: {e}")
-        print(f"\n[DEVELOPMENT MODE] Could not send real email. Your simulated OTP is: {otp}\n")
+        print(f"\n[RENDER DEMO MODE] Render Free tier blocks emails.")
+        print(f"YOUR OTP IS: {otp}\n")
         return False
