@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem('token', token);
       // Fetch user data
-      axios.get(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/auth/me` )
+      axios.get(`https://helixvault.onrender.com/api/auth/me` )
         .then(res => {
           setUser(res.data);
         })

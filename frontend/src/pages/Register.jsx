@@ -21,7 +21,7 @@ export default function Register() {
     setError('');
     
     try {
-      await axios.post(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/auth/register` , {
+      await axios.post(`https://helixvault.onrender.com/api/auth/register` , {
         email,
         password
       });
@@ -41,7 +41,7 @@ export default function Register() {
     setSuccess('');
     
     try {
-      await axios.post(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/auth/verify-otp` , {
+      await axios.post(`https://helixvault.onrender.com/api/auth/verify-otp` , {
         email,
         otp
       });

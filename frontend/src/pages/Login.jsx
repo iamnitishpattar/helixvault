@@ -22,7 +22,7 @@ export default function Login() {
     formData.append('password', password);
 
     try {
-      const res = await axios.post(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/auth/login` , formData, {
+      const res = await axios.post(`https://helixvault.onrender.com/api/auth/login` , formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       login(res.data.access_token, res.data.email);

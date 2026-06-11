@@ -10,7 +10,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/dna/history` );
+        const res = await axios.get(`https://helixvault.onrender.com/api/dna/history` );
         const data = res.data.map(item => ({
           name: item.filename.substring(0, 10) + '...',
           gc: item.gc_content,
