@@ -54,7 +54,16 @@ def extract_sequence_from_file(file_content: bytes, filename: str) -> str:
     if filename.endswith(".gb") or filename.endswith(".genbank"):
         fmt = "genbank"
 
-    records = list(SeqIO.parse(handle, fmt))
+    try:
+        records = list(SeqIO.parse(handle, fmt))
+    except Exception as e:
+        # Fallback to fasta-blast for commented FASTA files
+        if fmt == "fasta":
+            handle.seek(0)
+            records = list(SeqIO.parse(handle, "fasta-blast"))
+        else:
+            raise e
+
     if not records:
         raise ValueError("No sequence found in file")
 
