@@ -34,12 +34,18 @@ def generate_fasta(dna_seq: str, sequence_id: str = "HelixVault_Seq", descriptio
     return handle.getvalue()
 
 
+import re
+
 def generate_genbank(dna_seq: str, sequence_id: str = "HV_001", description: str = "Synthetic DNA Data") -> str:
     # GenBank format has specific requirements for the ID and name
+    clean_id = re.sub(r'[^a-zA-Z0-9_]', '', sequence_id)[:16]
+    if not clean_id:
+        clean_id = "HV_001"
+        
     record = SeqRecord(
         Seq(dna_seq),
-        id=sequence_id[:16],  # GenBank locus names have max length
-        name=sequence_id[:16],
+        id=clean_id,  # GenBank locus names have max length and strict character limits
+        name=clean_id,
         description=description,
         annotations={"molecule_type": "DNA"}
     )
