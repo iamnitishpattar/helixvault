@@ -12,6 +12,11 @@ if DATABASE_URL:
     # Fix legacy "postgres://" URLs to "postgresql://" for SQLAlchemy
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    # psycopg2 does not support the pgbouncer query parameter
+    if "?pgbouncer=true" in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("?pgbouncer=true", "")
+        
     engine = create_engine(DATABASE_URL)
 else:
     # Fallback to local SQLite database

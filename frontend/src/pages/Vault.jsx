@@ -9,7 +9,7 @@ function Vault() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/dna/history');
+        const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/dna/history` );
         setHistory(res.data);
       } catch (err) {
         console.error("Failed to fetch history", err);
