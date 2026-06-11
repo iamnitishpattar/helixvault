@@ -37,7 +37,7 @@ function EncoderDecoder() {
     formData.append('use_steganography', useSteganography);
 
     try {
-      const res = await axios.post(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/dna/encode` , formData);
+      const res = await axios.post(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/dna/encode` , formData);
       setResult(res.data);
     } catch (err) {
       alert("Error encoding file: " + (err.response?.data?.detail || err.message));
@@ -62,7 +62,7 @@ function EncoderDecoder() {
     formData.append('use_steganography', useSteganography);
 
     try {
-      const res = await axios.post(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/dna/decode` , formData);
+      const res = await axios.post(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/dna/decode` , formData);
       setDecodeResult(res.data);
     } catch (err) {
       alert("Error decoding file: " + (err.response?.data?.detail || err.message));

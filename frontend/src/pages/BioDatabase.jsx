@@ -16,7 +16,7 @@ function BioDatabase() {
     if (!ncbiQuery) return;
     setLoadingNcbi(true);
     try {
-      const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/bio/ncbi/search?query=${ncbiQuery}`);
+      const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/bio/ncbi/search?query=${ncbiQuery}`);
       setNcbiResults(res.data.results);
       setSelectedSequence(null);
     } catch (err) {
@@ -29,7 +29,7 @@ function BioDatabase() {
   const fetchNcbiSequence = async (id) => {
     setLoadingNcbi(true);
     try {
-      const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/bio/ncbi/fetch/${id}`);
+      const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/bio/ncbi/fetch/${id}`);
       setSelectedSequence(res.data);
     } catch (err) {
       alert("Error fetching sequence: " + err.message);
@@ -42,7 +42,7 @@ function BioDatabase() {
     if (!ensemblQuery) return;
     setLoadingEnsembl(true);
     try {
-      const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/bio/ensembl/gene/${ensemblQuery}`);
+      const res = await axios.get(`\${import.meta.env.VITE_API_URL || 'https://helixvault.onrender.com'}/api/bio/ensembl/gene/${ensemblQuery}`);
       setEnsemblResult(res.data.data);
     } catch {
       alert("Error searching Ensembl: Gene not found or API error.");
