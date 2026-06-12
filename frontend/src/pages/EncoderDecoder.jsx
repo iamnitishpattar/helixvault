@@ -4,16 +4,45 @@ import axios from 'axios';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import Dna3DAnimation from '../components/Dna3DAnimation';
+
+async function calculateSHA256(fileOrString) {
+  let buffer;
+  if (fileOrString instanceof File || fileOrString instanceof Blob) {
+    buffer = await fileOrString.arrayBuffer();
+  } else {
+    buffer = new TextEncoder().encode(fileOrString);
+  }
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function formatWeight(bp) {
+  const grams = bp * 1.096e-21;
+  if (grams < 1e-18) return (grams * 1e21).toFixed(2) + " zeptograms";
+  if (grams < 1e-15) return (grams * 1e18).toFixed(2) + " attograms";
+  if (grams < 1e-12) return (grams * 1e15).toFixed(2) + " femtograms";
+  return (grams * 1e12).toFixed(2) + " picograms";
+}
+
 function EncoderDecoder() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [originalFileHash, setOriginalFileHash] = useState(null);
   const [mode, setMode] = useState('encode'); // 'encode' or 'decode'
   const fileInputRef = useRef(null);
 
   const [decodeFile, setDecodeFile] = useState(null);
   const [decodeResult, setDecodeResult] = useState(null);
+  const [decodedHash, setDecodedHash] = useState(null);
   const decodeFileInputRef = useRef(null);
+  
+  // Animation state
+  const [showMutationAnim, setShowMutationAnim] = useState(false);
+  const [mutationMessage, setMutationMessage] = useState("");
 
   // Advanced Options
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -30,13 +59,17 @@ function EncoderDecoder() {
   const handleEncode = async () => {
     if (!file) return;
     setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    if (password) formData.append('password', password);
-    formData.append('use_error_correction', useErrorCorrection);
-    formData.append('use_steganography', useSteganography);
-
+    
     try {
+      const hash = await calculateSHA256(file);
+      setOriginalFileHash(hash);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      if (password) formData.append('password', password);
+      formData.append('use_error_correction', useErrorCorrection);
+      formData.append('use_steganography', useSteganography);
+
       const res = await axios.post(`https://helixvault.onrender.com/api/dna/encode` , formData);
       setResult(res.data);
     } catch (err) {
@@ -64,11 +97,62 @@ function EncoderDecoder() {
     try {
       const res = await axios.post(`https://helixvault.onrender.com/api/dna/decode` , formData);
       setDecodeResult(res.data);
+      
+      // Calculate hash of decoded file
+      const byteCharacters = atob(res.data.file_data_b64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const hash = await calculateSHA256(new Blob([byteArray]));
+      setDecodedHash(hash);
+      
     } catch (err) {
       alert("Error decoding file: " + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMutateSequence = async () => {
+    if (!decodeFile) return;
+    setShowMutationAnim(true);
+    
+    // Read file
+    const text = await decodeFile.text();
+    
+    // Simple mutation simulation: randomly change ~0.5% of A,C,G,T bases
+    const chars = text.split('');
+    const bases = ['A', 'C', 'G', 'T'];
+    let mutationsCount = 0;
+    
+    for (let i = 0; i < chars.length; i++) {
+      if (bases.includes(chars[i].toUpperCase()) && Math.random() < 0.005) {
+        // Mutate to a random different base
+        const availableBases = bases.filter(b => b !== chars[i].toUpperCase());
+        chars[i] = availableBases[Math.floor(Math.random() * availableBases.length)];
+        mutationsCount++;
+      }
+    }
+    
+    const mutatedText = chars.join('');
+    
+    // Create new file object with mutated text
+    const mutatedFile = new File([mutatedText], `mutated_${decodeFile.name}`, {
+      type: decodeFile.type || 'text/plain'
+    });
+    
+    setMutationMessage(`Mutation Applied: ${mutationsCount} bases corrupted!`);
+    
+    // Wait for animation to complete before setting file
+    // We pass a callback to the animation component, but we can also just set it now
+    // and let the animation hide it for a bit
+    setDecodeFile(mutatedFile);
+  };
+
+  const handleAnimationComplete = () => {
+    setShowMutationAnim(false);
   };
 
   const downloadFile = (content, filename) => {
@@ -188,6 +272,8 @@ function EncoderDecoder() {
 
   return (
     <div>
+      {showMutationAnim && <Dna3DAnimation onComplete={handleAnimationComplete} />}
+      
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2><span className="text-gradient">Data {'<>'} DNA</span> Converter</h2>
         <div style={{ display: 'flex', gap: '1rem', background: 'var(--glass-bg)', padding: '0.5rem', borderRadius: 'var(--radius-full)' }}>
@@ -316,16 +402,31 @@ function EncoderDecoder() {
               </div>
             ) : (
               <div>
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)', flex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
                     <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Sequence Length</p>
                     <h4>{result.metrics.length} bp</h4>
                   </div>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)', flex: 1 }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
                     <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>GC Content</p>
                     <h4>{result.metrics.gc_content}%</h4>
                   </div>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Est. Synthesis Cost</p>
+                    <h4 style={{ color: 'var(--accent-pink)' }}>${(result.metrics.length * 0.10).toLocaleString()}</h4>
+                  </div>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Physical Weight</p>
+                    <h4 style={{ color: 'var(--accent-purple)' }}>{formatWeight(result.metrics.length)}</h4>
+                  </div>
                 </div>
+
+                {originalFileHash && (
+                  <div style={{ background: 'rgba(0,255,204,0.05)', border: '1px solid rgba(0,255,204,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem' }}>
+                    <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Original File SHA-256 Checksum</p>
+                    <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent-cyan)', wordBreak: 'break-all' }}>{originalFileHash}</p>
+                  </div>
+                )}
 
                 <div style={{ marginBottom: '1.5rem' }}>
                   <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>DNA Sequence Preview</p>
@@ -447,15 +548,31 @@ function EncoderDecoder() {
             )}
           </div>
           
-          <button 
-            className="btn btn-primary" 
-            style={{ width: '100%', marginBottom: '2rem', justifyContent: 'center' }}
-            onClick={handleDecode}
-            disabled={!decodeFile || loading}
-          >
-            {loading ? <RefreshCw className="animate-spin" /> : <Database />}
-            {loading ? 'Decoding...' : 'Extract Data'}
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+            <button 
+              className="btn" 
+              style={{ flex: 1, justifyContent: 'center', borderColor: 'var(--accent-pink)', color: 'var(--accent-pink)' }}
+              onClick={handleMutateSequence}
+              disabled={!decodeFile || loading}
+            >
+              <Dna /> Simulate Biological Mutation
+            </button>
+            <button 
+              className="btn btn-primary" 
+              style={{ flex: 2, justifyContent: 'center' }}
+              onClick={handleDecode}
+              disabled={!decodeFile || loading}
+            >
+              {loading ? <RefreshCw className="animate-spin" /> : <Database />}
+              {loading ? 'Decoding...' : 'Extract Data'}
+            </button>
+          </div>
+          
+          {mutationMessage && (
+            <div style={{ background: 'rgba(255,0,85,0.1)', border: '1px solid var(--accent-pink)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', textAlign: 'center', color: 'var(--accent-pink)' }}>
+              {mutationMessage}
+            </div>
+          )}
 
           {decodeResult && (
             <div style={{ background: 'rgba(0,255,204,0.1)', border: '1px solid var(--accent-cyan)', padding: '1.5rem', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
@@ -467,6 +584,32 @@ function EncoderDecoder() {
                 <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
                   <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Content Preview:</p>
                   {filePreview}
+                </div>
+              )}
+
+              {decodedHash && (
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', textAlign: 'left' }}>
+                  <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Recovered File SHA-256 Checksum:</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent-cyan)', wordBreak: 'break-all', marginBottom: '1rem' }}>{decodedHash}</p>
+                  
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
+                    <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Verify Integrity (Optional): Select original file to compare hashes.</p>
+                    <input 
+                      type="file" 
+                      className="input-glass" 
+                      style={{ fontSize: '0.8rem', padding: '0.5rem' }}
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const originalHash = await calculateSHA256(e.target.files[0]);
+                          if (originalHash === decodedHash) {
+                            alert("✅ INTEGRITY VERIFIED 100%! The decoded file is a perfect pixel-by-pixel match with your original file.");
+                          } else {
+                            alert("❌ INTEGRITY FAILED! The decoded file does not match the original file.");
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
