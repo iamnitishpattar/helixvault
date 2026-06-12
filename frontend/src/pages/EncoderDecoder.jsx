@@ -141,12 +141,48 @@ function EncoderDecoder() {
     doc.save(`${result.filename}_DNA_Report.pdf`);
   };
 
-  let decodedTextPreview = null;
-  if (decodeResult && decodeResult.filename.match(/\.(txt|md|csv|json|js|jsx|py|html|css|gb|fasta)$/i)) {
-    try {
-      decodedTextPreview = decodeURIComponent(escape(atob(decodeResult.file_data_b64)));
-    } catch {
-      decodedTextPreview = "Preview not available for this file type.";
+  let filePreview = null;
+  if (decodeResult) {
+    const ext = decodeResult.filename.split('.').pop().toLowerCase();
+    
+    if (['txt', 'md', 'csv', 'json', 'js', 'jsx', 'py', 'html', 'css', 'gb', 'fasta'].includes(ext)) {
+      try {
+        const textContent = decodeURIComponent(escape(atob(decodeResult.file_data_b64)));
+        filePreview = (
+          <textarea 
+            readOnly
+            className="input-glass"
+            style={{ width: '100%', minHeight: '150px', maxHeight: '300px', resize: 'vertical', fontFamily: 'monospace', color: 'var(--accent-cyan)' }}
+            value={textContent}
+          ></textarea>
+        );
+      } catch {
+        filePreview = <p className="text-muted">Preview not available for this text file.</p>;
+      }
+    } else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
+      filePreview = (
+        <div style={{ textAlign: 'center' }}>
+          <img 
+            src={`data:image/${ext === 'svg' ? 'svg+xml' : ext};base64,${decodeResult.file_data_b64}`} 
+            alt="Decoded Preview" 
+            style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: 'var(--radius-sm)', objectFit: 'contain' }} 
+          />
+        </div>
+      );
+    } else if (['pdf'].includes(ext)) {
+      filePreview = (
+        <iframe 
+          src={`data:application/pdf;base64,${decodeResult.file_data_b64}#toolbar=0`} 
+          style={{ width: '100%', height: '500px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)' }}
+          title="PDF Preview"
+        ></iframe>
+      );
+    } else {
+      filePreview = (
+        <div className="flex-center" style={{ height: '150px', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)' }}>
+          <p className="text-muted">Preview not available for this file type (.{ext}). Please download to view.</p>
+        </div>
+      );
     }
   }
 
@@ -427,15 +463,10 @@ function EncoderDecoder() {
               <h3 style={{ marginBottom: '0.5rem' }}>Successfully Decoded</h3>
               <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Original Filename: <strong>{decodeResult.filename}</strong></p>
               
-              {decodedTextPreview && (
+              {filePreview && (
                 <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
                   <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Content Preview:</p>
-                  <textarea 
-                    readOnly
-                    className="input-glass"
-                    style={{ width: '100%', minHeight: '150px', maxHeight: '300px', resize: 'vertical', fontFamily: 'monospace', color: 'var(--accent-cyan)' }}
-                    value={decodedTextPreview}
-                  ></textarea>
+                  {filePreview}
                 </div>
               )}
 
