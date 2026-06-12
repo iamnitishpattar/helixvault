@@ -98,7 +98,9 @@ def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
 
         if len(b3_buffer) == 6:
             b = base3_to_byte(b3_buffer)
-            payload_bytes.append(b)
+            # Mutations can cause the 6-digit base-3 value to exceed 255 (up to 728).
+            # We modulo 256 so it remains a valid byte. Reed-Solomon will correct it.
+            payload_bytes.append(b % 256)
             b3_buffer = []
 
     # Parse the header
@@ -110,7 +112,7 @@ def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
     if len(payload_bytes) < 1 + filename_len + 4:
         raise ValueError("Invalid DNA payload (too short for header)")
 
-    filename = payload_bytes[1:1+filename_len].decode('utf-8')
+    filename = payload_bytes[1:1+filename_len].decode('utf-8', errors='ignore')
 
     data_len_start = 1 + filename_len
     data_len = struct.unpack(
