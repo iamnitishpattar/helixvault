@@ -122,13 +122,14 @@ function EncoderDecoder() {
     // Read file
     const text = await decodeFile.text();
     
-    // Simple mutation simulation: randomly change ~0.5% of A,C,G,T bases
+    // Simple mutation simulation: randomly change ~0.05% of A,C,G,T bases
+    // (We keep it at 0.05% so it doesn't exceed the 10-byte Reed-Solomon limit of our backend)
     const chars = text.split('');
     const bases = ['A', 'C', 'G', 'T'];
     let mutationsCount = 0;
     
     for (let i = 0; i < chars.length; i++) {
-      if (bases.includes(chars[i].toUpperCase()) && Math.random() < 0.005) {
+      if (bases.includes(chars[i].toUpperCase()) && Math.random() < 0.0005) {
         // Mutate to a random different base
         const availableBases = bases.filter(b => b !== chars[i].toUpperCase());
         chars[i] = availableBases[Math.floor(Math.random() * availableBases.length)];
