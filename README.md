@@ -5,7 +5,6 @@
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
 
 HelixVault is a futuristic web application designed to encode digital files (PDFs, Images, Text) into synthesized biological DNA sequences (`.fasta`, `.gb` GenBank formats) for millennia-scale data storage. It features advanced biological simulations, steganography, and robust error correction mathematically proving the viability of DNA storage.
-
 Developed as a master-level MCA academic project.
 
 ---
