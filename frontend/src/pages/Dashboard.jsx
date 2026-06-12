@@ -100,8 +100,8 @@ function Dashboard() {
                     <stop offset="95%" stopColor="var(--accent-cyan)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="name" stroke="var(--text-muted)" />
-                <YAxis stroke="var(--text-muted)" domain={[0, 100]} />
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" tick={{ fill: 'rgba(255,255,255,0.8)' }} />
+                <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fill: 'rgba(255,255,255,0.8)' }} domain={[0, 100]} />
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                 <Tooltip 
                   contentStyle={{ backgroundColor: 'var(--bg-dark)', border: '1px solid var(--accent-cyan)' }}
