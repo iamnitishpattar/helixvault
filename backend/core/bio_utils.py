@@ -56,9 +56,17 @@ def generate_genbank(dna_seq: str, sequence_id: str = "HV_001", description: str
 
 def extract_sequence_from_file(file_content: bytes, filename: str) -> str:
     handle = io.StringIO(file_content.decode('utf-8'))
-    fmt = "fasta"
-    if filename.endswith(".gb") or filename.endswith(".genbank"):
+    
+    # Auto-detect format by peeking at the content
+    # GenBank files start with 'LOCUS', FASTA files start with '>'
+    content_start = file_content.decode('utf-8')[:20].strip()
+    
+    if content_start.startswith("LOCUS"):
         fmt = "genbank"
+    elif filename.endswith(".gb") or filename.endswith(".genbank"):
+        fmt = "genbank"
+    else:
+        fmt = "fasta"
 
     try:
         records = list(SeqIO.parse(handle, fmt))
