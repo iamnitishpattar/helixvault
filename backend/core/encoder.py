@@ -85,9 +85,16 @@ def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
 
     b3_buffer = []
     for base in dna_seq:
-        digit = REV_BASE_MAP[current_base][base]
+        # Handle mutations that create invalid transitions (homopolymers)
+        if base not in REV_BASE_MAP.get(current_base, {}):
+            digit = 0  # Default to 0; Reed-Solomon will fix this corrupted byte later
+        else:
+            digit = REV_BASE_MAP[current_base][base]
+            
         b3_buffer.append(digit)
-        current_base = base
+        
+        if base in REV_BASE_MAP:
+            current_base = base
 
         if len(b3_buffer) == 6:
             b = base3_to_byte(b3_buffer)
