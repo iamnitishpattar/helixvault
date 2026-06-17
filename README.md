@@ -24,19 +24,19 @@
 
 ### ⚙️ Encoding Process
 <div align="center">
-  <img src="./assets/encoding.png" alt="Encoding Process" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <img src="./assets/encoding.gif" alt="Encoding Process" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
   <p><em>Transforming digital files into biological sequences with Base-3 encoding.</em></p>
 </div>
 
 ### 🦠 Mutation Simulation
 <div align="center">
-  <img src="./assets/mutation.png" alt="Mutation Simulator" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <img src="./assets/mutation.gif" alt="Mutation Simulator" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
   <p><em>Testing system robustness by deliberately simulating biological DNA damage.</em></p>
 </div>
 
 ### 🛡️ Recovery Process
 <div align="center">
-  <img src="./assets/recovery.png" alt="Recovery Process" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <img src="./assets/recovery.gif" alt="Recovery Process" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
   <p><em>Reed-Solomon algorithms perfectly reconstructing data from mutated DNA.</em></p>
 </div>
 
