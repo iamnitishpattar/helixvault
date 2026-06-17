@@ -1,11 +1,103 @@
 # 🧬 HelixVault: Next-Gen DNA Data Storage
 
-![HelixVault](https://img.shields.io/badge/Status-Production-brightgreen)
-![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB)
-![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
+<div align="center">
+  <img src="https://img.shields.io/badge/Status-Production-brightgreen" alt="Status" />
+  <img src="https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Backend-FastAPI-009688" alt="FastAPI" />
+</div>
 
-HelixVault is a futuristic web application designed to encode digital files (PDFs, Images, Text) into synthesized biological DNA sequences (`.fasta`, `.gb` GenBank formats) for millennia-scale data storage. It features advanced biological simulations, steganography, and robust error correction mathematically proving the viability of DNA storage.
-Developed as a master-level MCA academic project.
+<br/>
+
+> HelixVault is a futuristic web application designed to encode digital files (PDFs, Images, Text) into synthesized biological DNA sequences (`.fasta`, `.gb` GenBank formats) for millennia-scale data storage. It features advanced biological simulations, steganography, and robust error correction mathematically proving the viability of DNA storage.
+
+*Developed as a master-level MCA academic project.*
+
+---
+
+## 📸 Application Showcase
+
+### 🏠 Homepage
+<div align="center">
+  <img src="./assets/homepage.png" alt="HelixVault Homepage" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <p><em>The futuristic entry point to millennia-scale data storage.</em></p>
+</div>
+
+### ⚙️ Encoding Process
+<div align="center">
+  <img src="./assets/encoding.png" alt="Encoding Process" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <p><em>Transforming digital files into biological sequences with Base-3 encoding.</em></p>
+</div>
+
+### 🦠 Mutation Simulation
+<div align="center">
+  <img src="./assets/mutation.png" alt="Mutation Simulator" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <p><em>Testing system robustness by deliberately simulating biological DNA damage.</em></p>
+</div>
+
+### 🛡️ Recovery Process
+<div align="center">
+  <img src="./assets/recovery.png" alt="Recovery Process" width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);" />
+  <p><em>Reed-Solomon algorithms perfectly reconstructing data from mutated DNA.</em></p>
+</div>
+
+---
+
+## 🏗️ Architecture Diagram
+
+<div align="center">
+
+```mermaid
+graph TD
+    %% Styling
+    classDef frontend fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff;
+    classDef backend fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef storage fill:#0f172a,stroke:#f59e0b,stroke-width:2px,color:#fff;
+    classDef bio fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#fff;
+
+    %% Client Side
+    subgraph Client [Client Interface]
+        UI[React + Vite UI]:::frontend
+        3D[3D Mutation Simulator]:::frontend
+        Charts[Recharts Analytics]:::frontend
+    end
+
+    %% Backend Services
+    subgraph Server [FastAPI Backend]
+        API[RESTful API Gateway]:::backend
+        Auth[JWT Authentication]:::backend
+        
+        subgraph Core Logic
+            Encrypt[AES-256 Encryption]:::backend
+            RS[Reed-Solomon ECC]:::backend
+            Encode[Base-3 Encoder]:::backend
+            Stego[DNA Steganography]:::backend
+        end
+        
+        API --> Auth
+        API --> Encrypt
+        Encrypt --> RS
+        RS --> Encode
+        Encode --> Stego
+    end
+
+    %% Storage & Biology
+    subgraph Storage [Data Persistence]
+        DB[(PostgreSQL)]:::storage
+    end
+    
+    subgraph Biological Output [Biological Domain]
+        GenBank[GenBank/FASTA Files]:::bio
+        SyntheticDNA[Synthetic DNA]:::bio
+    end
+
+    %% Connections
+    UI <-->|JSON & Files| API
+    3D -->|Mutation Params| API
+    Auth <--> DB
+    Stego --> GenBank
+    GenBank -.->|Physical Synthesis| SyntheticDNA
+```
+</div>
 
 ---
 
