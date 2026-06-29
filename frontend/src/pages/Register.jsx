@@ -88,6 +88,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
+                autoComplete="off"
               />
             </div>
 
@@ -105,6 +106,7 @@ export default function Register() {
                   placeholder="••••••••"
                   minLength="6"
                   style={{ paddingRight: '2.5rem' }}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
@@ -157,6 +159,7 @@ export default function Register() {
                 placeholder="123456"
                 maxLength="6"
                 style={{ textAlign: 'center', letterSpacing: '0.5rem', fontSize: '1.2rem' }}
+                autoComplete="off"
               />
             </div>
 

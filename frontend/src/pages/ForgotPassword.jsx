@@ -83,6 +83,7 @@ export default function ForgotPassword() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
+                autoComplete="off"
               />
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
@@ -106,6 +107,7 @@ export default function ForgotPassword() {
                 placeholder="123456"
                 maxLength={6}
                 style={{ letterSpacing: '0.2rem', textAlign: 'center', fontSize: '1.2rem' }}
+                autoComplete="off"
               />
             </div>
             <div style={{ marginBottom: '2rem' }}>
@@ -122,6 +124,7 @@ export default function ForgotPassword() {
                   placeholder="••••••••"
                   minLength={6}
                   style={{ paddingRight: '2.5rem' }}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
