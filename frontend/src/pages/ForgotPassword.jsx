@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, KeyRound, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, KeyRound, Lock, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function ForgotPassword() {
@@ -11,6 +11,7 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSendOtp = async (e) => {
@@ -111,15 +112,38 @@ export default function ForgotPassword() {
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Lock size={16} /> New Password
               </label>
-              <input
-                type="password"
-                required
-                className="input-glass"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                minLength={6}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  className="input-glass"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  minLength={6}
+                  style={{ paddingRight: '2.5rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0
+                  }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(45deg, var(--accent-purple), var(--accent-pink))' }} disabled={loading}>
               {loading ? 'Resetting...' : 'Reset Password'} <ArrowRight size={18} />
