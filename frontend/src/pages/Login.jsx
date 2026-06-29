@@ -63,9 +63,14 @@ export default function Login() {
           </div>
 
           <div style={{ marginBottom: '2rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-              <Lock size={16} /> Password
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                <Lock size={16} /> Password
+              </label>
+              <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: 'var(--accent-purple)', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = 'var(--accent-cyan)'} onMouseLeave={(e) => e.target.style.color = 'var(--accent-purple)'}>
+                Forgot Password?
+              </Link>
+            </div>
             <input
               type="password"
               required
