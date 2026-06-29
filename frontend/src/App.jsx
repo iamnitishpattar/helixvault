@@ -6,14 +6,15 @@ import BioDatabase from './pages/BioDatabase';
 import Vault from './pages/Vault';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 function Navigation() {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  // Don't show nav on login/register pages
-  if (['/login', '/register'].includes(location.pathname)) {
+  // Don't show nav on login/register/forgot-password pages
+  if (['/login', '/register', '/forgot-password'].includes(location.pathname)) {
     return null;
   }
 
@@ -114,6 +115,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/encode" element={<ProtectedRoute><EncoderDecoder /></ProtectedRoute>} />
