@@ -16,13 +16,13 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     const formData = new URLSearchParams();
     formData.append('username', email); // OAuth2 expects 'username'
     formData.append('password', password);
 
     try {
-      const res = await axios.post(`https://helixvault.onrender.com/api/auth/login` , formData, {
+      const res = await axios.post(`https://helixvault.onrender.com/api/auth/login`, formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       login(res.data.access_token, res.data.email);
@@ -40,7 +40,7 @@ export default function Login() {
         <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
           Welcome back to <span className="text-gradient">HelixVault</span>
         </h2>
-        
+
         {error && (
           <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4d4d', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid rgba(255,0,0,0.3)' }}>
             {error}
@@ -52,8 +52,8 @@ export default function Login() {
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
               <Mail size={16} /> Email Address
             </label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               required
               className="input-glass"
               value={email}
@@ -66,8 +66,8 @@ export default function Login() {
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
               <Lock size={16} /> Password
             </label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               required
               className="input-glass"
               value={password}
@@ -76,9 +76,9 @@ export default function Login() {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center' }}
             disabled={loading}
           >

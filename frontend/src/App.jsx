@@ -11,12 +11,12 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 function Navigation() {
   const location = useLocation();
   const { user, logout } = useAuth();
-  
+
   // Don't show nav on login/register pages
   if (['/login', '/register'].includes(location.pathname)) {
     return null;
   }
-  
+
   return (
     <nav>
       <div className="flex-center" style={{ gap: '1rem' }}>
@@ -49,8 +49,8 @@ function Navigation() {
           </div>
         </Link>
         {user && (
-          <button 
-            onClick={logout} 
+          <button
+            onClick={logout}
             style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}
           >
             <LogOut size={18} /> Logout
@@ -84,13 +84,13 @@ function Footer() {
       width: '100%'
     }}>
       <div className="flex-center" style={{ gap: '2rem', flexWrap: 'wrap' }}>
-        <a href="mailto:nitishpattar7@gmail.com" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color='var(--accent-cyan)'} onMouseOut={e => e.currentTarget.style.color='var(--text-secondary)'}>
+        <a href="mailto:nitishpattar7@gmail.com" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent-cyan)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
           <Mail size={18} /> nitishpattar7@gmail.com
         </a>
-        <a href="tel:+917483704050" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color='var(--accent-purple)'} onMouseOut={e => e.currentTarget.style.color='var(--text-secondary)'}>
+        <a href="tel:+917483704050" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent-purple)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
           <Phone size={18} /> +91-7483704050
         </a>
-        <a href="https://www.instagram.com/nitishpattar07?igsh=MTZ0ZGY5OHBzNGZlZA==" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color='var(--accent-pink)'} onMouseOut={e => e.currentTarget.style.color='var(--text-secondary)'}>
+        <a href="https://www.instagram.com/nitishpattar07?igsh=MTZ0ZGY5OHBzNGZlZA==" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent-pink)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
             <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
@@ -111,17 +111,17 @@ function App() {
         <Router>
           <Navigation />
           <main className="container" style={{ marginTop: '2rem', flex: 1 }}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/encode" element={<ProtectedRoute><EncoderDecoder /></ProtectedRoute>} />
-            <Route path="/bio" element={<ProtectedRoute><BioDatabase /></ProtectedRoute>} />
-            <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
-          </Routes>
-        </main>
-        <Footer />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/encode" element={<ProtectedRoute><EncoderDecoder /></ProtectedRoute>} />
+              <Route path="/bio" element={<ProtectedRoute><BioDatabase /></ProtectedRoute>} />
+              <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
+            </Routes>
+          </main>
+          <Footer />
         </Router>
       </div>
     </AuthProvider>
