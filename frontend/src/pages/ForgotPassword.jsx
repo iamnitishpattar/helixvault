@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Mail, KeyRound, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1);
@@ -17,7 +18,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setError('');
     try {
-      await axios.post('https://helixvault.onrender.com/api/auth/forgot-password', { email });
+      await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email });
       setStep(2);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to send OTP');
@@ -31,7 +32,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setError('');
     try {
-      await axios.post('https://helixvault.onrender.com/api/auth/reset-password', {
+      await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
         email,
         otp,
         new_password: newPassword

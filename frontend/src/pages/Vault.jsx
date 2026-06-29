@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Archive, Lock, Shield, Dna } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 function Vault() {
   const [history, setHistory] = useState([]);
@@ -9,7 +10,7 @@ function Vault() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`https://helixvault.onrender.com/api/dna/history` );
+        const res = await axios.get(`${API_BASE_URL}/api/dna/history` );
         setHistory(res.data);
       } catch (err) {
         console.error("Failed to fetch history", err);

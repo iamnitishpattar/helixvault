@@ -3,6 +3,7 @@ import { Database, HardDrive, Cpu, Activity, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 function Dashboard() {
   const [chartData, setChartData] = useState([]);
@@ -10,7 +11,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`https://helixvault.onrender.com/api/dna/history` );
+        const res = await axios.get(`${API_BASE_URL}/api/dna/history` );
         const data = res.data.map(item => ({
           name: item.filename.substring(0, 10) + '...',
           gc: item.gc_content,

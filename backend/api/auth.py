@@ -8,7 +8,7 @@ import string
 from db.database import get_db
 from db.models import User, OTP
 from core.auth import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from core.email_utils import send_otp_email
+from core.email_utils import send_otp_email, send_reset_password_email
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
@@ -22,6 +22,14 @@ class RegisterRequest(BaseModel):
 class VerifyOTPRequest(BaseModel):
     email: str
     otp: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    otp: str
+    new_password: str
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -114,6 +122,47 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer", "email": user.email}
+
+@router.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    otp_code = "".join(random.choices(string.digits, k=6))
+    expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    db.query(OTP).filter(OTP.email == req.email).delete()
+    
+    new_otp = OTP(email=req.email, otp_code=otp_code, expires_at=expires)
+    db.add(new_otp)
+    db.commit()
+
+    send_reset_password_email(req.email, otp_code)
+    
+    return {"status": "success", "message": "Password reset code sent"}
+
+@router.post("/reset-password")
+def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    otp_record = db.query(OTP).filter(OTP.email == req.email).first()
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        
+    if otp_record.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="OTP has expired")
+        
+    if otp_record.otp_code != req.otp:
+        raise HTTPException(status_code=400, detail="Incorrect OTP")
+        
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.hashed_password = get_password_hash(req.new_password)
+    db.delete(otp_record)
+    db.commit()
+    
+    return {"status": "success", "message": "Password reset successfully"}
 
 @router.get("/me")
 def read_users_me(current_user: User = Depends(get_current_user)):

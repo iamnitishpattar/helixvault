@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,7 +23,7 @@ export default function Login() {
     formData.append('password', password);
 
     try {
-      const res = await axios.post(`https://helixvault.onrender.com/api/auth/login`, formData, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       login(res.data.access_token, res.data.email);

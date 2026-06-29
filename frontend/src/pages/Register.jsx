@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Mail, Lock, UserPlus, Key, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -21,7 +22,7 @@ export default function Register() {
     setError('');
     
     try {
-      await axios.post(`https://helixvault.onrender.com/api/auth/register` , {
+      await axios.post(`${API_BASE_URL}/api/auth/register` , {
         email,
         password
       });
@@ -41,7 +42,7 @@ export default function Register() {
     setSuccess('');
     
     try {
-      await axios.post(`https://helixvault.onrender.com/api/auth/verify-otp` , {
+      await axios.post(`${API_BASE_URL}/api/auth/verify-otp` , {
         email,
         otp
       });

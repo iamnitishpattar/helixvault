@@ -6,6 +6,7 @@ import "jspdf-autotable";
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import Dna3DAnimation from '../components/Dna3DAnimation';
+import { API_BASE_URL } from '../config';
 
 async function calculateSHA256(fileOrString) {
   let buffer;
@@ -70,7 +71,7 @@ function EncoderDecoder() {
       formData.append('use_error_correction', useErrorCorrection);
       formData.append('use_steganography', useSteganography);
 
-      const res = await axios.post(`https://helixvault.onrender.com/api/dna/encode` , formData);
+      const res = await axios.post(`${API_BASE_URL}/api/dna/encode` , formData);
       setResult(res.data);
     } catch (err) {
       alert("Error encoding file: " + (err.response?.data?.detail || err.message));
@@ -95,7 +96,7 @@ function EncoderDecoder() {
     formData.append('use_steganography', useSteganography);
 
     try {
-      const res = await axios.post(`https://helixvault.onrender.com/api/dna/decode` , formData);
+      const res = await axios.post(`${API_BASE_URL}/api/dna/decode` , formData);
       setDecodeResult(res.data);
       
       // Calculate hash of decoded file

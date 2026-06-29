@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const AuthContext = createContext();
 
@@ -16,7 +17,7 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem('token', token);
       // Fetch user data
-      axios.get(`https://helixvault.onrender.com/api/auth/me` )
+      axios.get(`${API_BASE_URL}/api/auth/me` )
         .then(res => {
           setUser(res.data);
         })
