@@ -3,6 +3,7 @@ import { Database, HardDrive, Cpu, Activity, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import SquiggleText from '../components/SquiggleText';
 
 const ChartWrapper = lazy(() => import('../components/ChartWrapper'));
 
@@ -37,7 +38,9 @@ function Dashboard() {
   return (
     <div>
       <div style={{ marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }} className="text-gradient">Storage Reimagined</h1>
+        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }} className="text-gradient">
+          <SquiggleText text="Storage Reimagined" />
+        </h1>
         <p className="text-muted" style={{ fontSize: '1.2rem', maxWidth: '600px' }}>
           Welcome to HelixVault. Convert your digital files into synthesized DNA sequences, ensuring data longevity for millennia.
         </p>

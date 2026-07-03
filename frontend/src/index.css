@@ -367,6 +367,15 @@ nav {
   animation: slideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes squiggle-wave {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-squiggle {
+  animation: squiggle-wave 2s ease-in-out infinite;
+}
+
 /* Scrollbar Modernization */
 ::-webkit-scrollbar {
   width: 10px;
