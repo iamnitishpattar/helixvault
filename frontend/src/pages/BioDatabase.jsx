@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Server, Dna, ArrowRight, ExternalLink, Activity } from 'lucide-react';
+import { Search, Server, Dna, ArrowRight, ExternalLink, Activity, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
@@ -44,6 +44,12 @@ function BioDatabase() {
   const [ensemblResult, setEnsemblResult] = useState(null);
   const [loadingEnsembl, setLoadingEnsembl] = useState(false);
 
+  const [ncbiDropdownOpen, setNcbiDropdownOpen] = useState(false);
+  const ncbiOptions = ['plasmid', 'pUC19', 'GFP', 'T7 promoter', 'Cas9'];
+
+  const [ensemblDropdownOpen, setEnsemblDropdownOpen] = useState(false);
+  const ensemblOptions = ['BRCA1', 'TP53', 'EGFR', 'MYC', 'INS'];
+
   const searchNcbi = async () => {
     if (!ncbiQuery) return;
     setLoadingNcbi(true);
@@ -84,10 +90,10 @@ function BioDatabase() {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
-        <h2><span className="text-gradient">Biological</span> Context Integration</h2>
-        <p className="text-muted" style={{ maxWidth: '700px', margin: '1rem auto' }}>
+    <div className="container">
+      <div style={{ marginBottom: '4rem', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '2.5rem', textTransform: 'uppercase', marginBottom: '1rem' }}>Biological Context Integration</h2>
+        <p className="text-muted" style={{ maxWidth: '700px', margin: '0 auto', fontSize: '1.1rem', lineHeight: '1.8' }}>
           Explore natural DNA sequences to use as potential "carriers" for your synthesized data, 
           and investigate genome annotations to ensure biological safety.
         </p>
@@ -95,23 +101,51 @@ function BioDatabase() {
 
       <div className="grid-cols-2">
         {/* NCBI Section */}
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-            <Server color="var(--accent-cyan)" size={28} />
-            <h3 style={{ margin: 0 }}>NCBI Entrez Database</h3>
+        <div className="showcase-card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              NCBI Entrez Database
+            </h3>
           </div>
           
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <input 
-              type="text" 
-              className="input-glass" 
-              placeholder="Search terms (e.g. pUC19, GFP)"
-              value={ncbiQuery}
-              onChange={(e) => setNcbiQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && searchNcbi()}
-              aria-label="Search NCBI Database"
-            />
-            <button type="button" className="btn btn-primary" onClick={searchNcbi} disabled={loadingNcbi}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  className="input-minimal" 
+                  placeholder="Search terms (e.g. pUC19, GFP)"
+                  value={ncbiQuery}
+                  onChange={(e) => setNcbiQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && searchNcbi()}
+                  onClick={() => setNcbiDropdownOpen(!ncbiDropdownOpen)}
+                  onBlur={() => setTimeout(() => setNcbiDropdownOpen(false), 200)}
+                  aria-label="Search NCBI Database"
+                  style={{ width: '100%', paddingRight: '2.5rem', cursor: 'pointer' }}
+                />
+                <ChevronDown size={18} color="#888" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+              
+              {ncbiDropdownOpen && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-black)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', marginTop: '0.5rem', zIndex: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                  {ncbiOptions.map(option => (
+                    <div 
+                      key={option}
+                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      onMouseDown={() => {
+                        setNcbiQuery(option);
+                        setNcbiDropdownOpen(false);
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button type="button" className="btn btn-solid-black" onClick={searchNcbi} disabled={loadingNcbi} style={{ padding: '0 1rem' }}>
               <Search size={18} />
             </button>
           </div>
@@ -133,9 +167,9 @@ function BioDatabase() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {ncbiResults.map((result) => (
-                  <button key={result.id} type="button" style={{ ...resultItemStyle, border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.02)', textAlign: 'left', font: 'inherit', color: 'inherit', width: '100%', display: 'flex' }} onClick={() => fetchNcbiSequence(result.id)}
-                     onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
-                     onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--glass-border)'}
+                  <button key={result.id} type="button" style={{ ...resultItemStyle, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)', textAlign: 'left', font: 'inherit', color: 'inherit', width: '100%', display: 'flex' }} onClick={() => fetchNcbiSequence(result.id)}
+                     onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'}
+                     onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                   >
                     <div style={{ flex: 1 }}>
                       <h5 style={{ color: 'var(--accent-cyan)', marginBottom: '0.25rem' }}>{result.accession}</h5>
@@ -153,23 +187,51 @@ function BioDatabase() {
         </div>
 
         {/* Ensembl Section */}
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-            <Activity color="var(--accent-purple)" size={28} />
-            <h3 style={{ margin: 0 }}>Ensembl Annotations</h3>
+        <div className="showcase-card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              Ensembl Annotations
+            </h3>
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <input 
-              type="text" 
-              className="input-glass" 
-              placeholder="Gene symbol (e.g. BRCA1)"
-              value={ensemblQuery}
-              onChange={(e) => setEnsemblQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && searchEnsembl()}
-              aria-label="Search Ensembl Gene Symbol"
-            />
-            <button type="button" className="btn" style={{ background: 'var(--accent-purple)', color: 'white', border: 'none' }} onClick={searchEnsembl} disabled={loadingEnsembl}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="text" 
+                  className="input-minimal" 
+                  placeholder="Gene symbol (e.g. BRCA1)"
+                  value={ensemblQuery}
+                  onChange={(e) => setEnsemblQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && searchEnsembl()}
+                  onClick={() => setEnsemblDropdownOpen(!ensemblDropdownOpen)}
+                  onBlur={() => setTimeout(() => setEnsemblDropdownOpen(false), 200)}
+                  aria-label="Search Ensembl Gene Symbol"
+                  style={{ width: '100%', paddingRight: '2.5rem', cursor: 'pointer' }}
+                />
+                <ChevronDown size={18} color="#888" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+              
+              {ensemblDropdownOpen && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-black)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', marginTop: '0.5rem', zIndex: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                  {ensemblOptions.map(option => (
+                    <div 
+                      key={option}
+                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      onMouseDown={() => {
+                        setEnsemblQuery(option);
+                        setEnsemblDropdownOpen(false);
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button type="button" className="btn btn-solid-black" onClick={searchEnsembl} disabled={loadingEnsembl} style={{ padding: '0 1rem' }}>
               <Search size={18} />
             </button>
           </div>
@@ -213,7 +275,7 @@ function BioDatabase() {
                 </div>
 
                 <a href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${ensemblResult.id}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                  <button type="button" className="btn" style={{ width: '100%', justifyContent: 'center' }}>
+                  <button type="button" className="btn" style={{ width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
                     View in Ensembl <ExternalLink size={14} />
                   </button>
                 </a>

@@ -103,7 +103,7 @@ export default function EncoderView() {
 
   return (
     <div className="grid-cols-2">
-      <div className="glass-panel">
+      <div className="showcase-card">
         <h3 style={{ marginBottom: '1.5rem' }}>1. Select File & Options</h3>
         <div 
           className={`upload-area ${file ? 'active' : ''}`}
@@ -140,7 +140,7 @@ export default function EncoderView() {
           <button 
             type="button"
             className="btn" 
-            style={{ width: '100%', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ width: '100%', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}
             onClick={() => setShowAdvanced(!showAdvanced)}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -201,8 +201,8 @@ export default function EncoderView() {
 
         <button 
           type="button"
-          className="btn btn-primary" 
-          style={{ width: '100%', justifyContent: 'center' }}
+          className="btn" 
+          style={{ width: '100%', justifyContent: 'center', background: '#fff', color: '#000', padding: '1rem', border: 'none' }}
           onClick={handleEncode}
           disabled={!file || loading}
         >
@@ -211,7 +211,7 @@ export default function EncoderView() {
         </button>
       </div>
 
-      <div className="glass-panel" style={result ? { borderColor: 'var(--accent-cyan)' } : {}}>
+      <div className="showcase-card" style={result ? { borderColor: 'var(--accent-gold)' } : {}}>
         <h3 style={{ marginBottom: '1.5rem' }}>2. Synthesis Result</h3>
         
         {!result ? (
@@ -258,7 +258,7 @@ export default function EncoderView() {
               <button 
                 type="button"
                 className="btn" 
-                style={{ flex: '1 1 45%', justifyContent: 'center' }}
+                style={{ flex: '1 1 45%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
                 onClick={() => downloadFile(result.fasta, `${result.filename}.fasta`)}
               >
                 <Download size={16} /> FASTA
@@ -266,15 +266,15 @@ export default function EncoderView() {
               <button 
                 type="button"
                 className="btn" 
-                style={{ flex: '1 1 45%', justifyContent: 'center' }}
+                style={{ flex: '1 1 45%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
                 onClick={() => downloadFile(result.genbank, `${result.filename}.gb`)}
               >
                 <Download size={16} /> GenBank
               </button>
               <button 
                 type="button"
-                className="btn btn-primary" 
-                style={{ flex: '1 1 100%', justifyContent: 'center', marginTop: '0.5rem' }}
+                className="btn" 
+                style={{ flex: '1 1 100%', justifyContent: 'center', marginTop: '0.5rem', background: '#fff', color: '#000', padding: '1rem', border: 'none' }}
                 onClick={generatePDFReport}
               >
                 <FileText size={16} /> Generate PDF Report

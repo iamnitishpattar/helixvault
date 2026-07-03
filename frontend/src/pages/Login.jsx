@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Dna } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,7 +21,7 @@ export default function Login() {
     setError('');
 
     const formData = new URLSearchParams();
-    formData.append('username', email); // OAuth2 expects 'username'
+    formData.append('username', email);
     formData.append('password', password);
 
     try {
@@ -36,81 +37,94 @@ export default function Login() {
     }
   };
 
+
+
   return (
-    <div className="flex-center" style={{ minHeight: '80vh' }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '400px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          Welcome back to <span className="text-gradient">HelixVault</span>
-        </h2>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', margin: '-1rem', overflow: 'hidden' }}>
+      {/* Left Panel - Visuals */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+          <h1 style={{ fontSize: '3.5rem', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,0.5)', marginBottom: '0.5rem' }}>HELIXVAULT</h1>
+          <p style={{ color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.9rem' }}>The Biological Data Engine</p>
+        </div>
+      </div>
 
-        {error && (
-          <div className="alert-error">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="login-email" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-              <Mail size={16} /> Email Address
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              required
-              className="input-glass"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="off"
-            />
-          </div>
-
-          <div style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label htmlFor="login-password" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-                <Lock size={16} /> Password
-              </label>
-              <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: 'var(--accent-purple)', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = 'var(--accent-cyan)'} onMouseLeave={(e) => e.target.style.color = 'var(--accent-purple)'}>
-                Forgot Password?
-              </Link>
+      {/* Right Panel - Form */}
+      <div style={{ flex: 1, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', overflowY: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: '340px', color: '#1a1a1a' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '1rem', letterSpacing: '0.6em', fontSize: '1.4rem', fontWeight: 300, color: '#1a1a1a', fontFamily: "'Outfit', sans-serif" }}>
+              <Dna size={24} style={{ marginLeft: '-0.6em' }} /> H E L I X
             </div>
-            <div style={{ position: 'relative' }}>
+          </div>
+
+          <h2 style={{ color: '#1a1a1a', marginBottom: '1.5rem', fontSize: '1.1rem', fontWeight: 700 }}>Log in</h2>
+
+          {error && (
+            <div style={{ background: '#ffeeee', color: '#cc0000', padding: '0.75rem', borderRadius: '6px', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+              {error}
+            </div>
+          )}
+
+
+
+          <form onSubmit={handleLogin}>
+            <div style={{ background: '#f5f5f5', borderRadius: '6px', padding: '2px', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <input
-                id="login-password"
-                type={showPassword ? "text" : "password"}
+                id="login-email"
+                type="text"
                 required
-                className="input-glass"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                style={{ paddingRight: '2.5rem' }}
-                autoComplete="new-password"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email or username"
+                autoComplete="off"
+                style={{ width: '100%', padding: '1rem', border: 'none', background: '#fff', borderRadius: '4px 4px 0 0', outline: 'none', fontSize: '0.9rem', color: '#1a1a1a' }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle-btn"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="password"
+                  autoComplete="new-password"
+                  style={{ width: '100%', padding: '1rem', paddingRight: '4rem', border: 'none', background: '#fff', borderRadius: '0 0 4px 4px', outline: 'none', fontSize: '0.9rem', color: '#1a1a1a' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#666', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
+
+            <button
+              type="submit"
+              style={{ width: '100%', padding: '1rem', background: '#2a2a2a', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', marginBottom: '1.5rem' }}
+              disabled={loading}
+              onMouseOver={e => e.currentTarget.style.background = '#1a1a1a'}
+              onMouseOut={e => e.currentTarget.style.background = '#2a2a2a'}
+            >
+              {loading ? 'Authenticating...' : 'Log in'}
+            </button>
+          </form>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <Link to="/forgot-password" style={{ color: '#1a1a1a', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>
+              Forgot password?
+            </Link>
+            
+            <p style={{ marginTop: '2rem', color: '#666', fontSize: '0.85rem' }}>
+              Don't have an account? <Link to="/register" style={{ color: '#1a1a1a', fontWeight: 600, textDecoration: 'none' }}>Sign up</Link>
+            </p>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', justifyContent: 'center' }}
-            disabled={loading}
-          >
-            {loading ? 'Authenticating...' : 'Login'} <ArrowRight size={18} />
-          </button>
-        </form>
-
-        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary)' }}>
-          Don't have an account? <Link to="/register" style={{ color: 'var(--accent-cyan)' }}>Create one</Link>
-        </p>
+        </div>
       </div>
     </div>
   );

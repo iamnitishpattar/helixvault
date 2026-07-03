@@ -163,7 +163,7 @@ export default function DecoderView() {
   }
 
   return (
-    <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div className="showcase-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <h3 style={{ marginBottom: '1.5rem' }}>DNA Sequence Decoder</h3>
       <p className="text-muted" style={{ marginBottom: '1rem' }}>
         Upload the synthesized DNA file to recover your data. Match the advanced options used during encoding.
@@ -203,7 +203,7 @@ export default function DecoderView() {
         <button 
           type="button"
           className="btn" 
-          style={{ width: '100%', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)' }}
+          style={{ width: '100%', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)' }}
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -261,8 +261,8 @@ export default function DecoderView() {
         </button>
         <button 
           type="button"
-          className="btn btn-primary" 
-          style={{ flex: 2, justifyContent: 'center' }}
+          className="btn" 
+          style={{ flex: 2, justifyContent: 'center', background: '#fff', color: '#000', padding: '1rem', border: 'none' }}
           onClick={handleDecode}
           disabled={!decodeFile || loading}
         >
@@ -317,7 +317,7 @@ export default function DecoderView() {
             </div>
           )}
 
-          <button type="button" className="btn" onClick={downloadDecodedFile}>
+          <button type="button" className="btn" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }} onClick={downloadDecodedFile}>
             <Download size={16} /> Download Recovered File
           </button>
         </div>

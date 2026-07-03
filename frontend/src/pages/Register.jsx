@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, Lock, UserPlus, Key, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function Register() {
@@ -57,129 +57,141 @@ export default function Register() {
   };
 
   return (
-    <div className="flex-center" style={{ minHeight: '80vh' }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '400px' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          {step === 1 ? 'Create Account' : 'Verify Email'}
-        </h2>
-        
-        {error && (
-          <div className="alert-error">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="alert-success">
-            {success}
-          </div>
-        )}
+    <div style={{ display: 'flex', flex: 1, flexDirection: 'row' }}>
+      {/* Left Panel - Visuals */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+          <h1 style={{ fontSize: '3.5rem', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,0.5)', marginBottom: '0.5rem' }}>HELIXVAULT</h1>
+          <p style={{ color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.9rem' }}>The Biological Data Engine</p>
+        </div>
+      </div>
 
-        {step === 1 ? (
-          <form onSubmit={handleRegister}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label htmlFor="register-email" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                <Mail size={16} /> Email Address
-              </label>
-              <input 
-                id="register-email"
-                type="email" 
-                required
-                className="input-glass"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="off"
-              />
-            </div>
-
-            <div style={{ marginBottom: '2rem' }}>
-              <label htmlFor="register-password" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                <Lock size={16} /> Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  id="register-password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  className="input-glass"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  minLength="6"
-                  style={{ paddingRight: '2.5rem' }}
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle-btn"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Generate OTP & Continue'} <Mail size={18} />
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOTP}>
-            <p style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
-              Enter the 6-digit OTP sent to <strong>{email}</strong>
+      {/* Right Panel - Form */}
+      <div style={{ flex: 1, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ width: '100%', maxWidth: '400px', color: '#1a1a1a' }}>
+          <div style={{ marginBottom: '3rem' }}>
+            <h2 style={{ color: '#1a1a1a', marginBottom: '0.5rem', fontSize: '2.5rem' }}>
+              {step === 1 ? 'Sign up' : 'Verify Email'}
+            </h2>
+            <p style={{ color: '#666' }}>
+              {step === 1 ? 'Create an account to start encoding.' : `Enter the OTP sent to ${email}`}
             </p>
-            
-            <div style={{ marginBottom: '2rem' }}>
-              <label htmlFor="otp-input" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                <Key size={16} /> 6-Digit OTP
-              </label>
-              <input 
-                id="otp-input"
-                type="text" 
-                required
-                className="input-glass"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="123456"
-                maxLength="6"
-                style={{ textAlign: 'center', letterSpacing: '0.5rem', fontSize: '1.2rem' }}
-                autoComplete="off"
-              />
+          </div>
+          
+          {error && (
+            <div style={{ background: '#ffeeee', color: '#cc0000', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              {error}
             </div>
+          )}
+          
+          {success && (
+            <div style={{ background: '#eeffee', color: '#008800', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              {success}
+            </div>
+          )}
 
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading}
-            >
-              {loading ? 'Verifying...' : 'Verify OTP'} <ArrowRight size={18} />
-            </button>
-            
-            <button 
-              type="button" 
-              className="btn" 
-              style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', background: 'transparent' }}
-              onClick={() => setStep(1)}
-              disabled={loading}
-            >
-              Back to Registration
-            </button>
-          </form>
-        )}
+          {step === 1 ? (
+            <form onSubmit={handleRegister}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="register-email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Email Address
+                </label>
+                <input 
+                  id="register-email"
+                  type="email" 
+                  required
+                  className="input-minimal"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="off"
+                />
+              </div>
 
-        {step === 1 && (
-          <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary)' }}>
-            Already have an account? <Link to="/login" style={{ color: 'var(--accent-cyan)' }}>Login</Link>
-          </p>
-        )}
+              <div style={{ marginBottom: '2.5rem' }}>
+                <label htmlFor="register-password" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    id="register-password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="input-minimal"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    minLength="6"
+                    style={{ paddingRight: '2.5rem' }}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="password-toggle-btn"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn btn-solid-black" 
+                style={{ width: '100%', padding: '1rem' }}
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : 'Generate OTP & Continue'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOTP}>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <label htmlFor="otp-input" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  6-Digit OTP
+                </label>
+                <input 
+                  id="otp-input"
+                  type="text" 
+                  required
+                  className="input-minimal"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  maxLength="6"
+                  style={{ textAlign: 'center', letterSpacing: '0.5rem', fontSize: '1.2rem' }}
+                  autoComplete="off"
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn btn-solid-black" 
+                style={{ width: '100%', padding: '1rem', marginBottom: '1rem' }}
+                disabled={loading}
+              >
+                {loading ? 'Verifying...' : 'Verify OTP'}
+              </button>
+              
+              <button 
+                type="button" 
+                className="btn" 
+                style={{ width: '100%', justifyContent: 'center', color: '#666', border: 'none' }}
+                onClick={() => setStep(1)}
+                disabled={loading}
+              >
+                Back to Registration
+              </button>
+            </form>
+          )}
+
+          {step === 1 && (
+            <p style={{ textAlign: 'center', marginTop: '2rem', color: '#666', fontSize: '0.9rem' }}>
+              Already have an account? <Link to="/login" style={{ color: '#1a1a1a', fontWeight: 600, textDecoration: 'none' }}>Log in</Link>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

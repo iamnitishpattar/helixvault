@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, KeyRound, Lock, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 export default function ForgotPassword() {
@@ -47,118 +47,130 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex-center" style={{ minHeight: '80vh', padding: '2rem 0' }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '400px' }}>
-        
-        {/* Step Indicator */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', justifyContent: 'center' }}>
-          <div style={{ height: '4px', flex: 1, borderRadius: '2px', background: step >= 1 ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)' }} />
-          <div style={{ height: '4px', flex: 1, borderRadius: '2px', background: step >= 2 ? 'var(--accent-purple)' : 'rgba(255,255,255,0.1)' }} />
-          <div style={{ height: '4px', flex: 1, borderRadius: '2px', background: step >= 3 ? 'var(--accent-pink)' : 'rgba(255,255,255,0.1)' }} />
+    <div style={{ display: 'flex', flex: 1, flexDirection: 'row' }}>
+      {/* Left Panel - Visuals */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
+          <h1 style={{ fontSize: '3.5rem', color: '#fff', textShadow: '0 4px 20px rgba(0,0,0,0.5)', marginBottom: '0.5rem' }}>HELIXVAULT</h1>
+          <p style={{ color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.9rem' }}>The Biological Data Engine</p>
         </div>
+      </div>
 
-        <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-          {step === 1 ? 'Forgot Password' : step === 2 ? 'Verify OTP' : 'Success!'}
-        </h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-          {step === 1 ? "Enter your email to receive a reset code." : step === 2 ? "Enter the 6-digit code sent to your email." : "Your password has been reset."}
-        </p>
-
-        {error && (
-          <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4d4d', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid rgba(255,0,0,0.3)' }}>
-            {error}
+      {/* Right Panel - Form */}
+      <div style={{ flex: 1, backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ width: '100%', maxWidth: '400px', color: '#1a1a1a' }}>
+          
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', justifyContent: 'center' }}>
+            <div style={{ height: '4px', flex: 1, borderRadius: '2px', background: step >= 1 ? '#1a1a1a' : '#eee' }} />
+            <div style={{ height: '4px', flex: 1, borderRadius: '2px', background: step >= 2 ? '#1a1a1a' : '#eee' }} />
+            <div style={{ height: '4px', flex: 1, borderRadius: '2px', background: step >= 3 ? '#1a1a1a' : '#eee' }} />
           </div>
-        )}
 
-        {step === 1 && (
-          <form onSubmit={handleSendOtp}>
-            <div style={{ marginBottom: '2rem' }}>
-              <label htmlFor="forgot-email" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                <Mail size={16} /> Email Address
-              </label>
-              <input
-                id="forgot-email"
-                type="email"
-                required
-                className="input-glass"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="off"
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-              {loading ? 'Sending...' : 'Send Reset Code'} <ArrowRight size={18} />
-            </button>
-          </form>
-        )}
+          <div style={{ marginBottom: '3rem' }}>
+            <h2 style={{ color: '#1a1a1a', marginBottom: '0.5rem', fontSize: '2.5rem' }}>
+              {step === 1 ? 'Forgot Password' : step === 2 ? 'Verify OTP' : 'Success!'}
+            </h2>
+            <p style={{ color: '#666' }}>
+              {step === 1 ? "Enter your email to receive a reset code." : step === 2 ? "Enter the 6-digit code sent to your email." : "Your password has been reset."}
+            </p>
+          </div>
 
-        {step === 2 && (
-          <form onSubmit={handleResetPassword}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label htmlFor="forgot-otp" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                <KeyRound size={16} /> 6-Digit OTP
-              </label>
-              <input
-                id="forgot-otp"
-                type="text"
-                required
-                className="input-glass"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="123456"
-                maxLength={6}
-                style={{ letterSpacing: '0.2rem', textAlign: 'center', fontSize: '1.2rem' }}
-                autoComplete="off"
-              />
+          {error && (
+            <div style={{ background: '#ffeeee', color: '#cc0000', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              {error}
             </div>
-            <div style={{ marginBottom: '2rem' }}>
-              <label htmlFor="forgot-new-password" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-                <Lock size={16} /> New Password
-              </label>
-              <div style={{ position: 'relative' }}>
+          )}
+
+          {step === 1 && (
+            <form onSubmit={handleSendOtp}>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <label htmlFor="forgot-email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Email Address
+                </label>
                 <input
-                  id="forgot-new-password"
-                  type={showPassword ? "text" : "password"}
+                  id="forgot-email"
+                  type="email"
                   required
-                  className="input-glass"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  minLength={6}
-                  style={{ paddingRight: '2.5rem' }}
-                  autoComplete="new-password"
+                  className="input-minimal"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="off"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="password-toggle-btn"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
+              <button type="submit" className="btn btn-solid-black" style={{ width: '100%', padding: '1rem' }} disabled={loading}>
+                {loading ? 'Sending...' : 'Send Reset Code'}
+              </button>
+            </form>
+          )}
+
+          {step === 2 && (
+            <form onSubmit={handleResetPassword}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="forgot-otp" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  6-Digit OTP
+                </label>
+                <input
+                  id="forgot-otp"
+                  type="text"
+                  required
+                  className="input-minimal"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  maxLength={6}
+                  style={{ letterSpacing: '0.5rem', textAlign: 'center', fontSize: '1.2rem' }}
+                  autoComplete="off"
+                />
+              </div>
+              <div style={{ marginBottom: '2.5rem' }}>
+                <label htmlFor="forgot-new-password" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  New Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="forgot-new-password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="input-minimal"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    minLength={6}
+                    style={{ paddingRight: '2.5rem' }}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="password-toggle-btn"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <button type="submit" className="btn btn-solid-black" style={{ width: '100%', padding: '1rem' }} disabled={loading}>
+                {loading ? 'Resetting...' : 'Reset Password'}
+              </button>
+            </form>
+          )}
+
+          {step === 3 && (
+            <div style={{ textAlign: 'center' }}>
+              <CheckCircle2 size={64} color="#00aa00" style={{ margin: '0 auto 1.5rem' }} />
+              <button type="button" onClick={() => navigate('/login')} className="btn btn-solid-black" style={{ width: '100%', padding: '1rem' }}>
+                Return to Log in
+              </button>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(45deg, var(--accent-purple), var(--accent-pink))' }} disabled={loading}>
-              {loading ? 'Resetting...' : 'Reset Password'} <ArrowRight size={18} />
-            </button>
-          </form>
-        )}
+          )}
 
-        {step === 3 && (
-          <div style={{ textAlign: 'center' }}>
-            <CheckCircle2 size={64} color="var(--accent-cyan)" style={{ margin: '0 auto 1.5rem' }} />
-            <button type="button" onClick={() => navigate('/login')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              Return to Login
-            </button>
-          </div>
-        )}
-
-        {step !== 3 && (
-          <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary)' }}>
-            Remembered your password? <Link to="/login" style={{ color: 'var(--accent-cyan)' }}>Login</Link>
-          </p>
-        )}
+          {step !== 3 && (
+            <p style={{ textAlign: 'center', marginTop: '2rem', color: '#666', fontSize: '0.9rem' }}>
+              Remembered your password? <Link to="/login" style={{ color: '#1a1a1a', fontWeight: 600, textDecoration: 'none' }}>Log in</Link>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ function Vault() {
   }, []);
 
   return (
-    <div>
+    <div style={{ padding: '2rem 3rem' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h2 className="text-gradient"><Archive style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> My DNA Vault</h2>
         <p className="text-muted">A secure history of all your synthesized DNA payloads.</p>
