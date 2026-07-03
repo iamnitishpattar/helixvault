@@ -18,25 +18,25 @@
 
 ### 🏠 Homepage — The Biological Data Engine
 <div align="center">
-  <video src="./assets/homepage.mp4" controls autoplay loop muted width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></video>
+  <video src="https://github.com/iamnitishpattar/helixvault/raw/main/assets/homepage.mp4" controls autoplay loop muted width="100%"></video>
   <p><em>A premium dark-themed dashboard with interactive SpotlightCards, real-time GC Content analytics, and a cinematic hero section showcasing DNA vs. traditional storage.</em></p>
 </div>
 
 ### ⚙️ DNA Encoder Interface
 <div align="center">
-  <video src="./assets/encoding.mp4" controls autoplay loop muted width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></video>
+  <video src="https://github.com/iamnitishpattar/helixvault/raw/main/assets/encoding.mp4" controls autoplay loop muted width="100%"></video>
   <p><em>Upload files and transform them into biological DNA sequences using Base-3 encoding, AES-256 encryption, Reed-Solomon ECC, and DNA steganography — all in a sleek glassmorphic interface.</em></p>
 </div>
 
 ### 🦠 Decoder & Mutation Simulator
 <div align="center">
-  <video src="./assets/mutation.mp4" controls autoplay loop muted width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></video>
+  <video src="https://github.com/iamnitishpattar/helixvault/raw/main/assets/mutation.mp4" controls autoplay loop muted width="100%"></video>
   <p><em>Upload GenBank files, deliberately simulate biological DNA damage with the mutation engine, then watch Reed-Solomon error correction perfectly reconstruct the original data.</em></p>
 </div>
 
 ### 🔐 Secure Vault & Bio Database
 <div align="center">
-  <video src="./assets/recovery.mp4" controls autoplay loop muted width="100%" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.5);"></video>
+  <video src="https://github.com/iamnitishpattar/helixvault/raw/main/assets/recovery.mp4" controls autoplay loop muted width="100%"></video>
   <p><em>Secure Vault for managing encoded DNA files with download/delete actions, and the Biological Database for querying real genomic sequences from NCBI — all behind JWT authentication.</em></p>
 </div>
 
