@@ -38,7 +38,7 @@ function Dashboard() {
   return (
     <div>
       <div style={{ marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }} className="text-gradient">
+        <h1 style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--accent-cyan)', textShadow: '0 0 20px rgba(0, 255, 204, 0.4)' }}>
           <SquiggleText text="Storage Reimagined" />
         </h1>
         <p className="text-muted" style={{ fontSize: '1.2rem', maxWidth: '600px' }}>
