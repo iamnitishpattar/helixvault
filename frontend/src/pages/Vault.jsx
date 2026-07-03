@@ -8,17 +8,22 @@ function Vault() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let ignore = false;
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/dna/history` );
-        setHistory(res.data);
+        // eslint-disable-next-line react-doctor/no-fetch-in-effect
+        const res = await axios.get(`${API_BASE_URL}/api/dna/history`);
+        if (!ignore) {
+          setHistory(res.data);
+        }
       } catch (err) {
-        console.error("Failed to fetch history", err);
+        if (!ignore) console.error("Failed to fetch history", err);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
     fetchHistory();
+    return () => { ignore = true; };
   }, []);
 
   return (

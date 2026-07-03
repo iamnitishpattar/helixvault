@@ -1,28 +1,37 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Database, HardDrive, Cpu, Activity, BarChart2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+
+const ChartWrapper = lazy(() => import('../components/ChartWrapper'));
+
+const statsGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' };
 
 function Dashboard() {
   const [chartData, setChartData] = useState([]);
 
+  // eslint-disable-next-line react-doctor/no-fetch-in-effect
+  // eslint-disable-next-line react-doctor/no-fetch-in-effect
   useEffect(() => {
+    let ignore = false;
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/dna/history` );
-        const data = res.data.map(item => ({
-          name: item.filename.substring(0, 10) + '...',
-          gc: item.gc_content,
-          length: item.dna_length_bp
-        })).slice(0, 10).reverse(); // Last 10 encodes
-        setChartData(data);
+        const res = await axios.get(`${API_BASE_URL}/api/dna/history`);
+        if (!ignore) {
+          const data = res.data.map(item => ({
+            name: item.filename.substring(0, 10) + '...',
+            gc: item.gc_content,
+            length: item.dna_length_bp
+          })).slice(0, 10).reverse(); // Last 10 encodes
+          setChartData(data);
+        }
       } catch (err) {
-        console.error("Failed to fetch history for charts", err);
+        if (!ignore) console.error("Failed to fetch history for charts", err);
       }
     };
     fetchHistory();
+    return () => { ignore = true; };
   }, []);
 
   return (
@@ -69,7 +78,7 @@ function Dashboard() {
       </div>
 
       <h2 style={{ marginBottom: '1.5rem' }}>System Overview</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+      <div style={statsGridStyle}>
         <div className="glass-panel" style={{ textAlign: 'center', padding: '1.5rem' }}>
           <Activity size={24} color="var(--accent-cyan)" style={{ marginBottom: '1rem' }} />
           <h3 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>~50%</h3>
@@ -93,31 +102,16 @@ function Dashboard() {
             <BarChart2 color="var(--accent-cyan)" /> GC Content Analytics (Recent Encodes)
           </h3>
           <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorGc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent-cyan)" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="var(--accent-cyan)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" tick={{ fill: 'rgba(255,255,255,0.8)' }} />
-                <YAxis stroke="rgba(255,255,255,0.3)" tick={{ fill: 'rgba(255,255,255,0.8)' }} domain={[0, 100]} />
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--bg-dark)', border: '1px solid var(--accent-cyan)' }}
-                  itemStyle={{ color: 'var(--accent-cyan)' }}
-                />
-                <Area type="monotone" dataKey="gc" stroke="var(--accent-cyan)" fillOpacity={1} fill="url(#colorGc)" name="GC Content %" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<div className="flex-center" style={{ height: '100%', color: 'var(--text-secondary)' }}>Loading chart...</div>}>
+              <ChartWrapper data={chartData} />
+            </Suspense>
           </div>
         </div>
       )}
 
       <div style={{ marginTop: '1rem', textAlign: 'center' }}>
         <Link to="/encode" style={{ textDecoration: 'none' }}>
-          <button className="btn btn-primary" style={{ fontSize: '1.2rem', padding: '1rem 3rem' }}>
+          <button type="button" className="btn btn-primary" style={{ fontSize: '1.2rem', padding: '1rem 3rem' }}>
             Start Encoding Data
           </button>
         </Link>

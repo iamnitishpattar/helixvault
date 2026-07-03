@@ -20,8 +20,11 @@ app = FastAPI(
 # CORS configuration for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all Vercel deployment URLs
-    allow_credentials=False, # We use JWT tokens in headers, not cookies, so False allows "*" to work safely
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ],  # Must be explicit when allow_credentials=True
+    allow_credentials=True, # Allow cookies for secure auth
     allow_methods=["*"],
     allow_headers=["*"],
 )

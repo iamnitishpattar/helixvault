@@ -51,8 +51,9 @@ function Navigation() {
         </Link>
         {user && (
           <button
+            type="button"
             onClick={logout}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}
+            className="nav-logout-btn"
           >
             <LogOut size={18} /> Logout
           </button>
@@ -72,26 +73,15 @@ const ProtectedRoute = ({ children }) => {
 
 function Footer() {
   return (
-    <footer style={{
-      marginTop: 'auto',
-      padding: '2rem',
-      borderTop: '1px solid var(--glass-border)',
-      background: 'rgba(10, 15, 24, 0.7)',
-      backdropFilter: 'blur(15px)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '1rem',
-      width: '100%'
-    }}>
+    <footer className="footer-container">
       <div className="flex-center" style={{ gap: '2rem', flexWrap: 'wrap' }}>
-        <a href="mailto:nitishpattar7@gmail.com" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent-cyan)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+        <a href="mailto:nitishpattar7@gmail.com" className="footer-link cyan" onFocus={e => e.currentTarget.style.color = 'var(--accent-cyan)'} onBlur={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
           <Mail size={18} /> nitishpattar7@gmail.com
         </a>
-        <a href="tel:+917483704050" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent-purple)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+        <a href="tel:+917483704050" className="footer-link purple" onFocus={e => e.currentTarget.style.color = 'var(--accent-purple)'} onBlur={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
           <Phone size={18} /> +91-7483704050
         </a>
-        <a href="https://www.instagram.com/nitishpattar07?igsh=MTZ0ZGY5OHBzNGZlZA==" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.color = 'var(--accent-pink)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+        <a href="https://www.instagram.com/nitishpattar07?igsh=MTZ0ZGY5OHBzNGZlZA==" target="_blank" rel="noopener noreferrer" className="footer-link pink" onFocus={e => e.currentTarget.style.color = 'var(--accent-pink)'} onBlur={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
             <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
@@ -100,7 +90,7 @@ function Footer() {
           @nitishpattar07
         </a>
       </div>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>© {new Date().getFullYear()} HelixVault. Developed by Nitish Pattar.</p>
+      <p suppressHydrationWarning style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>© {new Date().getFullYear()} HelixVault. Developed by Nitish Pattar.</p>
     </footer>
   );
 }

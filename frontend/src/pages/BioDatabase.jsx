@@ -3,6 +3,37 @@ import { Search, Server, Dna, ArrowRight, ExternalLink, Activity } from 'lucide-
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
+const sequenceStyle = {
+  background: 'rgba(0,0,0,0.3)', 
+  padding: '1rem', 
+  borderRadius: 'var(--radius-sm)',
+  fontFamily: 'monospace',
+  fontSize: '0.75rem',
+  color: 'var(--text-secondary)',
+  wordBreak: 'break-all',
+  maxHeight: '200px',
+  overflowY: 'auto'
+};
+
+const resultItemStyle = {
+  background: 'rgba(255,255,255,0.02)', 
+  border: '1px solid var(--glass-border)',
+  padding: '1rem', 
+  borderRadius: 'var(--radius-sm)',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  cursor: 'pointer',
+  transition: 'var(--transition-fast)'
+};
+
+const ensemblBoxStyle = {
+  background: 'rgba(157, 78, 221, 0.05)', 
+  border: '1px solid rgba(157, 78, 221, 0.3)', 
+  padding: '1.5rem', 
+  borderRadius: 'var(--radius-md)'
+};
+
 function BioDatabase() {
   const [ncbiQuery, setNcbiQuery] = useState('plasmid');
   const [ncbiResults, setNcbiResults] = useState([]);
@@ -78,8 +109,9 @@ function BioDatabase() {
               value={ncbiQuery}
               onChange={(e) => setNcbiQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchNcbi()}
+              aria-label="Search NCBI Database"
             />
-            <button className="btn btn-primary" onClick={searchNcbi} disabled={loadingNcbi}>
+            <button type="button" className="btn btn-primary" onClick={searchNcbi} disabled={loadingNcbi}>
               <Search size={18} />
             </button>
           </div>
@@ -89,48 +121,28 @@ function BioDatabase() {
             
             {!loadingNcbi && selectedSequence ? (
               <div>
-                <button className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginBottom: '1rem' }} onClick={() => setSelectedSequence(null)}>
+                <button type="button" className="btn" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem', marginBottom: '1rem' }} onClick={() => setSelectedSequence(null)}>
                   &larr; Back to Results
                 </button>
                 <h4>{selectedSequence.id}</h4>
                 <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>{selectedSequence.description}</p>
-                <div style={{ 
-                  background: 'rgba(0,0,0,0.3)', 
-                  padding: '1rem', 
-                  borderRadius: 'var(--radius-sm)',
-                  fontFamily: 'monospace',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  wordBreak: 'break-all',
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
+                <div style={sequenceStyle}>
                   {selectedSequence.sequence}
                 </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {ncbiResults.map((result) => (
-                  <div key={result.id} style={{ 
-                    background: 'rgba(255,255,255,0.02)', 
-                    border: '1px solid var(--glass-border)',
-                    padding: '1rem', 
-                    borderRadius: 'var(--radius-sm)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    transition: 'var(--transition-fast)'
-                  }} onClick={() => fetchNcbiSequence(result.id)}
+                  <button key={result.id} type="button" style={{ ...resultItemStyle, border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.02)', textAlign: 'left', font: 'inherit', color: 'inherit', width: '100%', display: 'flex' }} onClick={() => fetchNcbiSequence(result.id)}
                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-cyan)'}
                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--glass-border)'}
                   >
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <h5 style={{ color: 'var(--accent-cyan)', marginBottom: '0.25rem' }}>{result.accession}</h5>
                       <p className="text-muted" style={{ fontSize: '0.8rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{result.title}</p>
                     </div>
                     <ArrowRight size={16} color="var(--text-secondary)" />
-                  </div>
+                  </button>
                 ))}
                 {ncbiResults.length === 0 && !loadingNcbi && (
                   <p className="text-muted" style={{ textAlign: 'center', marginTop: '2rem' }}>No results. Try a search query.</p>
@@ -155,8 +167,9 @@ function BioDatabase() {
               value={ensemblQuery}
               onChange={(e) => setEnsemblQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchEnsembl()}
+              aria-label="Search Ensembl Gene Symbol"
             />
-            <button className="btn" style={{ background: 'var(--accent-purple)', color: 'white', border: 'none' }} onClick={searchEnsembl} disabled={loadingEnsembl}>
+            <button type="button" className="btn" style={{ background: 'var(--accent-purple)', color: 'white', border: 'none' }} onClick={searchEnsembl} disabled={loadingEnsembl}>
               <Search size={18} />
             </button>
           </div>
@@ -165,7 +178,7 @@ function BioDatabase() {
             {loadingEnsembl && <p className="text-muted">Fetching gene data...</p>}
             
             {ensemblResult && !loadingEnsembl && (
-              <div style={{ background: 'rgba(157, 78, 221, 0.05)', border: '1px solid rgba(157, 78, 221, 0.3)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
+              <div style={ensemblBoxStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                   <div>
                     <h2 style={{ margin: 0, color: 'var(--accent-purple)' }}>{ensemblResult.display_name}</h2>
@@ -200,7 +213,7 @@ function BioDatabase() {
                 </div>
 
                 <a href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${ensemblResult.id}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                  <button className="btn" style={{ width: '100%', justifyContent: 'center' }}>
+                  <button type="button" className="btn" style={{ width: '100%', justifyContent: 'center' }}>
                     View in Ensembl <ExternalLink size={14} />
                   </button>
                 </a>

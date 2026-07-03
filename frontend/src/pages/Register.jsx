@@ -64,13 +64,13 @@ export default function Register() {
         </h2>
         
         {error && (
-          <div style={{ background: 'rgba(255,0,0,0.1)', color: '#ff4d4d', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid rgba(255,0,0,0.3)' }}>
+          <div className="alert-error">
             {error}
           </div>
         )}
         
         {success && (
-          <div style={{ background: 'rgba(0,255,204,0.1)', color: 'var(--accent-cyan)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', border: '1px solid var(--accent-cyan)' }}>
+          <div className="alert-success">
             {success}
           </div>
         )}
@@ -78,10 +78,11 @@ export default function Register() {
         {step === 1 ? (
           <form onSubmit={handleRegister}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              <label htmlFor="register-email" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Mail size={16} /> Email Address
               </label>
               <input 
+                id="register-email"
                 type="email" 
                 required
                 className="input-glass"
@@ -93,11 +94,12 @@ export default function Register() {
             </div>
 
             <div style={{ marginBottom: '2rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              <label htmlFor="register-password" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Lock size={16} /> Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input 
+                  id="register-password"
                   type={showPassword ? "text" : "password"}
                   required
                   className="input-glass"
@@ -111,20 +113,8 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '0.75rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0
-                  }}
+                  className="password-toggle-btn"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -147,10 +137,11 @@ export default function Register() {
             </p>
             
             <div style={{ marginBottom: '2rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              <label htmlFor="otp-input" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Key size={16} /> 6-Digit OTP
               </label>
               <input 
+                id="otp-input"
                 type="text" 
                 required
                 className="input-glass"

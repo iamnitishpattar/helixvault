@@ -73,10 +73,11 @@ export default function ForgotPassword() {
         {step === 1 && (
           <form onSubmit={handleSendOtp}>
             <div style={{ marginBottom: '2rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              <label htmlFor="forgot-email" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Mail size={16} /> Email Address
               </label>
               <input
+                id="forgot-email"
                 type="email"
                 required
                 className="input-glass"
@@ -95,10 +96,11 @@ export default function ForgotPassword() {
         {step === 2 && (
           <form onSubmit={handleResetPassword}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              <label htmlFor="forgot-otp" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <KeyRound size={16} /> 6-Digit OTP
               </label>
               <input
+                id="forgot-otp"
                 type="text"
                 required
                 className="input-glass"
@@ -111,11 +113,12 @@ export default function ForgotPassword() {
               />
             </div>
             <div style={{ marginBottom: '2rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              <label htmlFor="forgot-new-password" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                 <Lock size={16} /> New Password
               </label>
               <div style={{ position: 'relative' }}>
                 <input
+                  id="forgot-new-password"
                   type={showPassword ? "text" : "password"}
                   required
                   className="input-glass"
@@ -129,20 +132,8 @@ export default function ForgotPassword() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '0.75rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0
-                  }}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="password-toggle-btn"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -157,7 +148,7 @@ export default function ForgotPassword() {
         {step === 3 && (
           <div style={{ textAlign: 'center' }}>
             <CheckCircle2 size={64} color="var(--accent-cyan)" style={{ margin: '0 auto 1.5rem' }} />
-            <button onClick={() => navigate('/login')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+            <button type="button" onClick={() => navigate('/login')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
               Return to Login
             </button>
           </div>
