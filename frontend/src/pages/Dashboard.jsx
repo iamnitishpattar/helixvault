@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import SquiggleText from '../components/SquiggleText';
+import SpotlightCard from '../components/SpotlightCard';
+import StarBorder from '../components/StarBorder';
 
 const ChartWrapper = lazy(() => import('../components/ChartWrapper'));
 
@@ -47,7 +49,7 @@ function Dashboard() {
       </div>
 
       <div className="grid-cols-2" style={{ marginBottom: '3rem' }}>
-        <div className="glass-panel">
+        <SpotlightCard className="glass-panel" spotlightColor="rgba(0, 255, 204, 0.2)">
           <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1rem', marginBottom: '1.5rem' }}>
             <div style={{ background: 'var(--glass-bg)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
               <HardDrive color="var(--accent-cyan)" size={32} />
@@ -61,9 +63,9 @@ function Dashboard() {
           <div style={{ width: '100%', height: '8px', background: 'var(--glass-border)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
             <div style={{ width: '5%', height: '100%', background: 'var(--text-secondary)' }}></div>
           </div>
-        </div>
+        </SpotlightCard>
 
-        <div className="glass-panel" style={{ borderColor: 'rgba(157, 78, 221, 0.3)', boxShadow: 'var(--shadow-neon)' }}>
+        <SpotlightCard className="glass-panel" spotlightColor="rgba(157, 78, 221, 0.2)" style={{ borderColor: 'rgba(157, 78, 221, 0.3)', boxShadow: 'var(--shadow-neon)' }}>
           <div className="flex-center" style={{ justifyContent: 'flex-start', gap: '1rem', marginBottom: '1.5rem' }}>
             <div style={{ background: 'var(--glass-bg)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
               <Database color="var(--accent-purple)" size={32} />
@@ -77,30 +79,30 @@ function Dashboard() {
           <div style={{ width: '100%', height: '8px', background: 'var(--glass-border)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
             <div style={{ width: '100%', height: '100%', background: 'var(--accent-gradient)' }}></div>
           </div>
-        </div>
+        </SpotlightCard>
       </div>
 
       <h2 style={{ marginBottom: '1.5rem' }}>System Overview</h2>
       <div style={statsGridStyle}>
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '1.5rem' }}>
-          <Activity size={24} color="var(--accent-cyan)" style={{ marginBottom: '1rem' }} />
+        <SpotlightCard className="glass-panel" spotlightColor="rgba(0, 255, 204, 0.15)" style={{ textAlign: 'center', padding: '1.5rem' }}>
+          <Activity size={24} color="var(--accent-cyan)" style={{ marginBottom: '1rem', display: 'inline-block' }} />
           <h3 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>~50%</h3>
           <p className="text-muted">Target GC Content</p>
-        </div>
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '1.5rem' }}>
-          <Cpu size={24} color="var(--accent-purple)" style={{ marginBottom: '1rem' }} />
+        </SpotlightCard>
+        <SpotlightCard className="glass-panel" spotlightColor="rgba(157, 78, 221, 0.15)" style={{ textAlign: 'center', padding: '1.5rem' }}>
+          <Cpu size={24} color="var(--accent-purple)" style={{ marginBottom: '1rem', display: 'inline-block' }} />
           <h3 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>0</h3>
           <p className="text-muted">Homopolymers Detected</p>
-        </div>
-        <div className="glass-panel" style={{ textAlign: 'center', padding: '1.5rem' }}>
-          <Database size={24} color="var(--text-primary)" style={{ marginBottom: '1rem' }} />
+        </SpotlightCard>
+        <SpotlightCard className="glass-panel" spotlightColor="rgba(255, 0, 128, 0.15)" style={{ textAlign: 'center', padding: '1.5rem' }}>
+          <Database size={24} color="var(--text-primary)" style={{ marginBottom: '1rem', display: 'inline-block' }} />
           <h3 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Base-3</h3>
           <p className="text-muted">Encoding Algorithm</p>
-        </div>
+        </SpotlightCard>
       </div>
 
       {chartData.length > 0 && (
-        <div className="glass-panel" style={{ marginBottom: '3rem' }}>
+        <SpotlightCard className="glass-panel" spotlightColor="rgba(0, 255, 204, 0.1)" style={{ marginBottom: '3rem' }}>
           <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <BarChart2 color="var(--accent-cyan)" /> GC Content Analytics (Recent Encodes)
           </h3>
@@ -109,14 +111,14 @@ function Dashboard() {
               <ChartWrapper data={chartData} />
             </Suspense>
           </div>
-        </div>
+        </SpotlightCard>
       )}
 
-      <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+      <div style={{ marginTop: '3rem', marginBottom: '3rem', textAlign: 'center' }}>
         <Link to="/encode" style={{ textDecoration: 'none' }}>
-          <button type="button" className="btn btn-primary" style={{ fontSize: '1.2rem', padding: '1rem 3rem' }}>
-            Start Encoding Data
-          </button>
+          <StarBorder as="button" color="var(--accent-cyan)" speed="4s" style={{ cursor: 'pointer' }}>
+            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Start Encoding Data</span>
+          </StarBorder>
         </Link>
       </div>
     </div>

@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import SplashCursor from './components/SplashCursor';
 
 function Navigation() {
   const location = useLocation();
@@ -99,6 +100,7 @@ function App() {
   return (
     <AuthProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <SplashCursor COLOR="#00ffcc" />
         <Router>
           <Navigation />
           <main className="container" style={{ marginTop: '2rem', flex: 1 }}>
