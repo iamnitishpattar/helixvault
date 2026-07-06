@@ -8,6 +8,20 @@ from api.auth import router as auth_router
 from db.database import engine, Base
 from db import models  # noqa: F401
 
+import logging
+import sys
+
+# Configure structured enterprise logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("helixvault")
+logger.info("Starting HelixVault Enterprise Backend...")
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -22,7 +36,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://localhost",
+        "http://127.0.0.1"
     ],  # Must be explicit when allow_credentials=True
     allow_credentials=True, # Allow cookies for secure auth
     allow_methods=["*"],

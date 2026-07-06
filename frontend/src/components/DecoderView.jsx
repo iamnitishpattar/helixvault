@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { UploadCloud, Download, File as FileIcon, RefreshCw, Database, Settings, Dna } from 'lucide-react';
+import { UploadCloud, Download, File as FileIcon, RefreshCw, Database, Settings, Dna, Thermometer } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { calculateSHA256 } from '../utils/fileUtils';
@@ -25,6 +25,9 @@ export default function DecoderView() {
   const [password, setPassword] = useState('');
   const [useErrorCorrection, setUseErrorCorrection] = useState(false);
   const [useSteganography, setUseSteganography] = useState(false);
+  
+  // Environment Decay Options
+  const [environment, setEnvironment] = useState('freezer');
 
   const handleDecodeFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -32,11 +35,12 @@ export default function DecoderView() {
     }
   };
 
-
-
   const handleDecode = async () => {
     if (!decodeFile) return;
     setLoading(true);
+    setDecodeResult(null);
+    setDecodedHash(null);
+    
     const formData = new FormData();
     formData.append('file', decodeFile);
     if (password) formData.append('password', password);
@@ -44,22 +48,53 @@ export default function DecoderView() {
     formData.append('use_steganography', useSteganography);
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/dna/decode`, formData);
-      setDecodeResult(res.data);
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const res = await axios.post(`${API_BASE_URL}/api/dna/decode`, formData, { headers });
       
-      // Calculate hash of decoded file
-      const byteCharacters = atob(res.data.file_data_b64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+      if (res.data.task_id) {
+        // Polling loop for Async Background Task
+        const intervalId = setInterval(async () => {
+          try {
+            const statusRes = await axios.get(`${API_BASE_URL}/api/dna/status/${res.data.task_id}`);
+            if (statusRes.data.status === 'success') {
+              clearInterval(intervalId);
+              setDecodeResult(statusRes.data);
+              
+              // Calculate hash of decoded file
+              const byteCharacters = atob(statusRes.data.file_data_b64);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              calculateSHA256(new Blob([byteArray])).then(setDecodedHash);
+              
+              setLoading(false);
+            } else if (statusRes.data.status === 'failed') {
+              clearInterval(intervalId);
+              alert("Error decoding file: " + statusRes.data.error);
+              setLoading(false);
+            }
+          } catch (e) {
+            console.error("Polling error", e);
+          }
+        }, 1500);
+      } else {
+        setDecodeResult(res.data);
+        const byteCharacters = atob(res.data.file_data_b64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const hash = await calculateSHA256(new Blob([byteArray]));
+        setDecodedHash(hash);
+        setLoading(false);
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const hash = await calculateSHA256(new Blob([byteArray]));
-      setDecodedHash(hash);
-      
     } catch (err) {
       alert("Error decoding file: " + (err.response?.data?.detail || err.message));
-    } finally {
       setLoading(false);
     }
   };
@@ -67,32 +102,60 @@ export default function DecoderView() {
   const handleMutateSequence = async () => {
     if (!decodeFile) return;
     
-    // Read file
     const text = await decodeFile.text();
-    
-    // Simple mutation simulation: randomly change ~0.05% of A,C,G,T bases
-    const chars = text.split('');
+    let chars = text.split('');
     const basesList = ['A', 'C', 'G', 'T'];
-    const basesSet = new Set(basesList); // Optimization: Array lookup in loop changed to Set
     let mutationsCount = 0;
+    let indelCount = 0;
     
-    for (let i = 0; i < chars.length; i++) {
-      if (basesSet.has(chars[i].toUpperCase()) && Math.random() < 0.0005) {
-        // Mutate to a random different base
+    // Set parameters based on environment
+    let errorRate = 0;
+    let indelRate = 0;
+    if (environment === 'freezer') {
+      errorRate = 0.0001;
+      indelRate = 0;
+    } else if (environment === 'room') {
+      errorRate = 0.005;
+      indelRate = 0;
+    } else if (environment === 'invivo') {
+      errorRate = 0.01;
+      indelRate = 0.005; // High indel rate for In Vivo
+    }
+
+    let i = 0;
+    while(i < chars.length) {
+      if (!basesList.includes(chars[i].toUpperCase())) {
+        i++;
+        continue;
+      }
+
+      if (Math.random() < errorRate) {
+        // Substitution
         const availableBases = basesList.filter(b => b !== chars[i].toUpperCase());
         chars[i] = availableBases[Math.floor(Math.random() * availableBases.length)];
         mutationsCount++;
+      } else if (Math.random() < indelRate) {
+        if (Math.random() > 0.5) {
+          // Deletion
+          chars.splice(i, 1);
+          indelCount++;
+          continue; // Don't increment i
+        } else {
+          // Insertion
+          chars.splice(i, 0, basesList[Math.floor(Math.random() * basesList.length)]);
+          indelCount++;
+          i++; // Skip the inserted base
+        }
       }
+      i++;
     }
     
     const mutatedText = chars.join('');
-    
-    // Create new file object with mutated text
     const mutatedFile = new File([mutatedText], `mutated_${decodeFile.name}`, {
       type: decodeFile.type || 'text/plain'
     });
     
-    setMutationMessage(`Mutation Applied: ${mutationsCount} bases corrupted!`);
+    setMutationMessage(`Mutation Applied [${environment}]: ${mutationsCount} substitutions, ${indelCount} indels corrupted!`);
     setDecodeFile(mutatedFile);
   };
 
@@ -118,7 +181,6 @@ export default function DecoderView() {
   let filePreview = null;
   if (decodeResult) {
     const ext = decodeResult.filename.split('.').pop().toLowerCase();
-    
     if (['txt', 'md', 'csv', 'json', 'js', 'jsx', 'py', 'html', 'css', 'gb', 'fasta'].includes(ext)) {
       try {
         const textContent = decodeURIComponent(escape(atob(decodeResult.file_data_b64)));
@@ -150,7 +212,6 @@ export default function DecoderView() {
           src={`data:application/pdf;base64,${decodeResult.file_data_b64}#toolbar=0`} 
           style={{ width: '100%', height: '500px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)' }}
           title="PDF Preview"
-          sandbox="allow-scripts"
         ></iframe>
       );
     } else {
@@ -168,11 +229,11 @@ export default function DecoderView() {
       <p className="text-muted" style={{ marginBottom: '1rem' }}>
         Upload the synthesized DNA file to recover your data. Match the advanced options used during encoding.
       </p>
+      
       <div 
         className={`upload-area ${decodeFile ? 'active' : ''}`}
         onClick={() => decodeFileInputRef.current?.click()}
         onKeyDown={(e) => handleKeyDown(e, () => decodeFileInputRef.current?.click())}
-        // eslint-disable-next-line react-doctor/no-static-element-interactions, react-doctor/click-events-have-key-events, react-doctor/prefer-tag-over-role
         role="button"
         tabIndex={0}
         style={{ marginBottom: '1.5rem' }}
@@ -207,13 +268,29 @@ export default function DecoderView() {
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Settings size={18} /> Decoding Options
+            <Settings size={18} /> Decoding & Environmental Options
           </div>
           <span>{showAdvanced ? '▲' : '▼'}</span>
         </button>
 
         {showAdvanced && (
           <div style={{ padding: '1.5rem', background: 'var(--bg-dark)', borderRadius: '0 0 var(--radius-sm) var(--radius-sm)' }}>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                <Thermometer size={16} color="var(--accent-pink)" /> Simulated Storage Environment
+              </label>
+              <select 
+                className="input-glass" 
+                value={environment}
+                onChange={(e) => setEnvironment(e.target.value)}
+              >
+                <option value="freezer">Deep Freeze Archival (-80°C) [Low Error]</option>
+                <option value="room">In Vitro Room Temp [Medium Error]</option>
+                <option value="invivo">In Vivo (Living E. coli Cell) [High Error + Indels]</option>
+              </select>
+            </div>
+
             <div style={{ marginBottom: '1rem' }}>
               <input 
                 type="password" 
@@ -222,16 +299,15 @@ export default function DecoderView() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                aria-label="Decryption Password"
               />
             </div>
+            
             <div style={{ display: 'flex', gap: '2rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
                   checked={useErrorCorrection}
                   onChange={(e) => setUseErrorCorrection(e.target.checked)}
-                  aria-label="Use Error Correction"
                 />
                 <span>Use Error Correction</span>
               </label>
@@ -240,7 +316,6 @@ export default function DecoderView() {
                   type="checkbox" 
                   checked={useSteganography}
                   onChange={(e) => setUseSteganography(e.target.checked)}
-                  aria-label="Extract from Steganography"
                 />
                 <span>Extract from Steganography</span>
               </label>
@@ -253,11 +328,11 @@ export default function DecoderView() {
         <button 
           type="button"
           className="btn" 
-          style={{ flex: 1, justifyContent: 'center', borderColor: 'var(--accent-pink)', color: 'var(--accent-pink)' }}
+          style={{ flex: 1, justifyContent: 'center', background: 'rgba(255,0,85,0.05)', borderColor: 'var(--accent-pink)', color: 'var(--accent-pink)' }}
           onClick={handleMutateSequence}
           disabled={!decodeFile || loading}
         >
-          <Dna /> Simulate Biological Mutation
+          <Dna /> Simulate Environmental Mutation
         </button>
         <button 
           type="button"
@@ -267,7 +342,7 @@ export default function DecoderView() {
           disabled={!decodeFile || loading}
         >
           {loading ? <RefreshCw className="animate-spin" /> : <Database />}
-          {loading ? 'Decoding...' : 'Extract Data'}
+          {loading ? 'Decoding from Enterprise Queue...' : 'Extract Data'}
         </button>
       </div>
       
@@ -311,7 +386,6 @@ export default function DecoderView() {
                       }
                     }
                   }}
-                  aria-label="Verify Integrity Original File Input"
                 />
               </div>
             </div>

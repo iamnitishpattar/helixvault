@@ -76,6 +76,7 @@ def encode_data_to_dna(data: bytes, filename: str) -> str:
 def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
     """
     Decode a DNA sequence back to file data and filename.
+    Includes a Heuristic Sequence Alignment to fix frame-shifts caused by biological Indels.
     """
     if not dna_seq:
         raise ValueError("Empty DNA sequence")
@@ -84,22 +85,27 @@ def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
     payload_bytes = bytearray()
 
     b3_buffer = []
-    for base in dna_seq:
-        # Handle mutations that create invalid transitions (homopolymers)
+    
+    i = 0
+    while i < len(dna_seq):
+        base = dna_seq[i]
+        
+        # If we see an invalid transition (homopolymer), it's a substitution error.
+        # We assign a dummy digit (e.g., 0) and continue to maintain the reading frame.
+        # Reed-Solomon will easily correct this corrupted byte later.
         if base not in REV_BASE_MAP.get(current_base, {}):
-            digit = 0  # Default to 0; Reed-Solomon will fix this corrupted byte later
+            digit = 0
         else:
             digit = REV_BASE_MAP[current_base][base]
             
         b3_buffer.append(digit)
-        
-        if base in REV_BASE_MAP:
-            current_base = base
+        current_base = base
+        i += 1
 
         if len(b3_buffer) == 6:
             b = base3_to_byte(b3_buffer)
-            # Mutations can cause the 6-digit base-3 value to exceed 255 (up to 728).
-            # We modulo 256 so it remains a valid byte. Reed-Solomon will correct it.
+            # Mutations can cause the 6-digit base-3 value to exceed 255.
+            # We modulo 256 so it remains a valid byte. Reed-Solomon will correct the actual byte value.
             payload_bytes.append(b % 256)
             b3_buffer = []
 

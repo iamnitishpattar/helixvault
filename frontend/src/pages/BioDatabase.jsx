@@ -99,7 +99,7 @@ function BioDatabase() {
         </p>
       </div>
 
-      <div className="grid-cols-2">
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         {/* NCBI Section */}
         <div className="showcase-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
@@ -181,111 +181,6 @@ function BioDatabase() {
                 {ncbiResults.length === 0 && !loadingNcbi && (
                   <p className="text-muted" style={{ textAlign: 'center', marginTop: '2rem' }}>No results. Try a search query.</p>
                 )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Ensembl Section */}
-        <div className="showcase-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-              Ensembl Annotations
-            </h3>
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  type="text" 
-                  className="input-minimal" 
-                  placeholder="Gene symbol (e.g. BRCA1)"
-                  value={ensemblQuery}
-                  onChange={(e) => setEnsemblQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchEnsembl()}
-                  onClick={() => setEnsemblDropdownOpen(!ensemblDropdownOpen)}
-                  onBlur={() => setTimeout(() => setEnsemblDropdownOpen(false), 200)}
-                  aria-label="Search Ensembl Gene Symbol"
-                  style={{ width: '100%', paddingRight: '2.5rem', cursor: 'pointer' }}
-                />
-                <ChevronDown size={18} color="#888" style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-              </div>
-              
-              {ensemblDropdownOpen && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-black)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', marginTop: '0.5rem', zIndex: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                  {ensemblOptions.map(option => (
-                    <div 
-                      key={option}
-                      style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                      onMouseDown={() => {
-                        setEnsemblQuery(option);
-                        setEnsemblDropdownOpen(false);
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      {option}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button type="button" className="btn btn-solid-black" onClick={searchEnsembl} disabled={loadingEnsembl} style={{ padding: '0 1rem' }}>
-              <Search size={18} />
-            </button>
-          </div>
-
-          <div style={{ flex: 1 }}>
-            {loadingEnsembl && <p className="text-muted">Fetching gene data...</p>}
-            
-            {ensemblResult && !loadingEnsembl && (
-              <div style={ensemblBoxStyle}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                  <div>
-                    <h2 style={{ margin: 0, color: 'var(--accent-purple)' }}>{ensemblResult.display_name}</h2>
-                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>{ensemblResult.id}</p>
-                  </div>
-                  <span className="badge" style={{ background: 'rgba(157, 78, 221, 0.2)', color: '#d8b4e2' }}>
-                    {ensemblResult.biotype}
-                  </span>
-                </div>
-                
-                <p style={{ fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-                  {ensemblResult.description}
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Species</p>
-                    <strong>{ensemblResult.species}</strong>
-                  </div>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Assembly Name</p>
-                    <strong>{ensemblResult.assembly_name}</strong>
-                  </div>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Strand</p>
-                    <strong>{ensemblResult.strand === 1 ? 'Forward (+)' : 'Reverse (-)'}</strong>
-                  </div>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-                    <p className="text-muted" style={{ fontSize: '0.75rem', marginBottom: '0.25rem' }}>Length</p>
-                    <strong>{(ensemblResult.end - ensemblResult.start).toLocaleString()} bp</strong>
-                  </div>
-                </div>
-
-                <a href={`https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=${ensemblResult.id}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                  <button type="button" className="btn" style={{ width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    View in Ensembl <ExternalLink size={14} />
-                  </button>
-                </a>
-              </div>
-            )}
-
-            {!ensemblResult && !loadingEnsembl && (
-              <div className="flex-center" style={{ height: '200px', flexDirection: 'column', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                <Dna size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                <p>Search for a gene symbol to view annotations and structural context.</p>
               </div>
             )}
           </div>

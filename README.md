@@ -143,9 +143,30 @@ graph TD
 
 ---
 
+## 🆕 Recent Updates (v2.0)
+
+*   **Fixed Reed-Solomon Heuristics:** Stripped out a flawed Heuristic Frame Alignment bug in the decoding engine that misinterpreted substitutions as indels, dramatically improving the accuracy of error correction.
+*   **PDF Rendering Fix:** Removed restrictive iframe sandboxing in the React frontend, allowing the browser's native PDF plugin to seamlessly render recovered `.pdf` files.
+*   **UI Polish:** Streamlined the application footer by removing unused corporate placeholder links.
+*   **BioDatabase Focus:** Removed the mock Ensembl Annotations section and centered the NCBI database tool to focus exclusively on fetching live carrier vectors (plasmids).
+*   **Dockerization:** The entire application (React, FastAPI, PostgreSQL) is now fully containerized via `docker-compose` for instant, isolated, one-click deployments.
+
+---
+
 ## 💻 Running Locally
 
-### 1. Start the Backend
+### Option A: Using Docker (Recommended)
+You can launch the entire stack (Frontend, Backend, Database) with a single command:
+```bash
+docker compose up --build -d
+```
+*   **Frontend:** `http://localhost:80`
+*   **Backend API:** `http://localhost:8000`
+*   **Database:** PostgreSQL on `localhost:5432`
+
+### Option B: Manual Setup (No Docker)
+
+#### 1. Start the Backend
 ```bash
 cd backend
 python -m venv venv
@@ -154,7 +175,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-### 2. Start the Frontend
+#### 2. Start the Frontend
 ```bash
 cd frontend
 npm install

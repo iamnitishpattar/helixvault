@@ -110,28 +110,13 @@ function Footer() {
           <h4 style={{ color: 'var(--text-primary)', marginBottom: '1.5rem', letterSpacing: '0.1em', fontSize: '0.85rem' }}>RESOURCES</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
             <li><Link to="/bio" className="footer-link">Biological Database</Link></li>
-            <li><a href="#" className="footer-link">API Documentation</a></li>
-            <li><a href="#" className="footer-link">Security Whitepaper</a></li>
           </ul>
         </div>
 
-        <div>
-          <h4 style={{ color: 'var(--text-primary)', marginBottom: '1.5rem', letterSpacing: '0.1em', fontSize: '0.85rem' }}>COMPANY</h4>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
-            <li><a href="#" className="footer-link">About Us</a></li>
-            <li><a href="#" className="footer-link">Privacy Policy</a></li>
-            <li><a href="#" className="footer-link">Terms of Service</a></li>
-          </ul>
-        </div>
       </div>
 
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2rem', textAlign: 'center', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2rem', textAlign: 'center', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', maxWidth: '1200px', margin: '0 auto' }}>
         <p style={{ margin: 0 }}>© {new Date().getFullYear()} HelixVault. Developed by Nitish Pattar.</p>
-        <div style={{ display: 'flex', gap: '1.5rem' }}>
-          <a href="#" className="footer-link">Terms</a>
-          <a href="#" className="footer-link">Privacy</a>
-          <a href="#" className="footer-link">Cookies</a>
-        </div>
       </div>
     </footer>
   );

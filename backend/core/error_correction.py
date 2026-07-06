@@ -1,8 +1,8 @@
 from reedsolo import RSCodec, ReedSolomonError
 
-# We use 10 bytes of ECC. This can correct up to 5 byte errors per chunk.
-# You can increase this for more robustness but it increases the size.
-rs = RSCodec(10)
+# We use 50 bytes of ECC. This can correct up to 25 byte errors per chunk.
+# This makes it robust enough to survive 'In Vitro Room Temp' and 'In Vivo' environmental mutations.
+rs = RSCodec(50)
 
 
 def apply_error_correction(data: bytes) -> bytes:
