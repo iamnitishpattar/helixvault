@@ -44,6 +44,7 @@ jobs:
           ENTREZ_EMAIL: "ci@helixvault.com"
           NCBI_API_KEY: ""
           DATABASE_URL: "sqlite:///./test_ci.db"
+          PYTHONPATH: "."
         run: |
           pytest tests/ -v --tb=short --cov=core --cov-report=term-missing
 
