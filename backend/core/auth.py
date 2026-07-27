@@ -2,8 +2,14 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import os
+import secrets
+from dotenv import load_dotenv
 
-SECRET_KEY = "helixvault_super_secret_key_change_in_production"
+load_dotenv()
+
+# Pull from environment, or generate a unique 32-byte secure hex key on boot
+SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_hex(32)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 week
 

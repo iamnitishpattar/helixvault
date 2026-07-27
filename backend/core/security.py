@@ -1,4 +1,7 @@
 import os
+import logging
+
+logger = logging.getLogger("helixvault")
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
@@ -47,5 +50,5 @@ def decrypt_data(data: bytes, password: str) -> bytes:
         plaintext = unpadder.update(padded_data) + unpadder.finalize()
         return plaintext
     except Exception as e:
-        raise ValueError(
-            f"Decryption failed. Incorrect password or corrupted data: {e}")
+        logger.error(f"Decryption failed: {e}", exc_info=True)
+        raise ValueError("Decryption failed. Incorrect password or corrupted data.") from e

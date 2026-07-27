@@ -1,4 +1,4 @@
-// eslint-disable-next-line react-doctor/prefer-dynamic-import
+ 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function ChartWrapper({ data }) {

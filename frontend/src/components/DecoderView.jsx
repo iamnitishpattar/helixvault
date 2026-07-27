@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Download, File as FileIcon, RefreshCw, Database, Settings, Dna, Thermometer } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { calculateSHA256 } from '../utils/fileUtils';
+import { getSafeApiErrorMessage, getSafeServerMessage, logClientRequestFailure } from '../utils/errorMessages';
 
 const handleKeyDown = (e, action) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -11,12 +12,21 @@ const handleKeyDown = (e, action) => {
   }
 };
 
+const DECODE_ERROR_MESSAGE = 'Decoding failed. Please check the DNA file and selected options, then try again.';
+
 export default function DecoderView() {
   const [decodeFile, setDecodeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [decodeResult, setDecodeResult] = useState(null);
   const [decodedHash, setDecodedHash] = useState(null);
   const decodeFileInputRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    };
+  }, []);
   
   const [mutationMessage, setMutationMessage] = useState("");
 
@@ -24,6 +34,7 @@ export default function DecoderView() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [password, setPassword] = useState('');
   const [useErrorCorrection, setUseErrorCorrection] = useState(false);
+  const [useFountain, setUseFountain] = useState(false);
   const [useSteganography, setUseSteganography] = useState(false);
   
   // Environment Decay Options
@@ -46,20 +57,20 @@ export default function DecoderView() {
     if (password) formData.append('password', password);
     formData.append('use_error_correction', useErrorCorrection);
     formData.append('use_steganography', useSteganography);
+    formData.append('use_fountain', useFountain);
 
     try {
-      const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const res = await axios.post(`${API_BASE_URL}/api/dna/decode`, formData, { headers });
+      const res = await axios.post(`${API_BASE_URL}/api/dna/decode`, formData, { 
+        withCredentials: true 
+      });
       
       if (res.data.task_id) {
         // Polling loop for Async Background Task
-        const intervalId = setInterval(async () => {
+        pollingIntervalRef.current = setInterval(async () => {
           try {
             const statusRes = await axios.get(`${API_BASE_URL}/api/dna/status/${res.data.task_id}`);
             if (statusRes.data.status === 'success') {
-              clearInterval(intervalId);
+              clearInterval(pollingIntervalRef.current);
               setDecodeResult(statusRes.data);
               
               // Calculate hash of decoded file
@@ -73,12 +84,12 @@ export default function DecoderView() {
               
               setLoading(false);
             } else if (statusRes.data.status === 'failed') {
-              clearInterval(intervalId);
-              alert("Error decoding file: " + statusRes.data.error);
+              clearInterval(pollingIntervalRef.current);
+              alert(getSafeServerMessage(statusRes.data.error, DECODE_ERROR_MESSAGE));
               setLoading(false);
             }
           } catch (e) {
-            console.error("Polling error", e);
+            logClientRequestFailure('Decoder status polling failed; retrying', e);
           }
         }, 1500);
       } else {
@@ -94,7 +105,8 @@ export default function DecoderView() {
         setLoading(false);
       }
     } catch (err) {
-      alert("Error decoding file: " + (err.response?.data?.detail || err.message));
+      alert(getSafeApiErrorMessage(err, DECODE_ERROR_MESSAGE));
+    } finally {
       setLoading(false);
     }
   };
@@ -170,20 +182,30 @@ export default function DecoderView() {
     const blob = new Blob([byteArray]);
     
     const element = document.createElement("a");
-    element.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    element.href = url;
     element.download = decodeResult.filename;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    URL.revokeObjectURL(element.href);
+    URL.revokeObjectURL(url);
   };
 
   let filePreview = null;
   if (decodeResult) {
     const ext = decodeResult.filename.split('.').pop().toLowerCase();
     if (['txt', 'md', 'csv', 'json', 'js', 'jsx', 'py', 'html', 'css', 'gb', 'fasta'].includes(ext)) {
+      let textContent = null;
+      let textError = false;
       try {
-        const textContent = decodeURIComponent(escape(atob(decodeResult.file_data_b64)));
+        textContent = decodeURIComponent(escape(atob(decodeResult.file_data_b64)));
+      } catch {
+        textError = true;
+      }
+      
+      if (textError) {
+        filePreview = <p className="text-muted">Preview not available for this text file.</p>;
+      } else {
         filePreview = (
           <textarea 
             readOnly
@@ -193,8 +215,6 @@ export default function DecoderView() {
             aria-label="File Preview Textarea"
           ></textarea>
         );
-      } catch {
-        filePreview = <p className="text-muted">Preview not available for this text file.</p>;
       }
     } else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
       filePreview = (
@@ -209,6 +229,7 @@ export default function DecoderView() {
     } else if (['pdf'].includes(ext)) {
       filePreview = (
         <iframe 
+          sandbox=""
           src={`data:application/pdf;base64,${decodeResult.file_data_b64}#toolbar=0`} 
           style={{ width: '100%', height: '500px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)' }}
           title="PDF Preview"
@@ -277,10 +298,11 @@ export default function DecoderView() {
           <div style={{ padding: '1.5rem', background: 'var(--bg-dark)', borderRadius: '0 0 var(--radius-sm) var(--radius-sm)' }}>
             
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+              <label htmlFor="environment" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                 <Thermometer size={16} color="var(--accent-pink)" /> Simulated Storage Environment
               </label>
               <select 
+                id="environment"
                 className="input-glass" 
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value)}
@@ -292,7 +314,9 @@ export default function DecoderView() {
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="decoder-password" style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Decryption Password</label>
               <input 
+                id="decoder-password"
                 type="password" 
                 placeholder="Decryption Password (if used)"
                 className="input-glass"
@@ -302,14 +326,28 @@ export default function DecoderView() {
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '2rem' }}>
+            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
                   checked={useErrorCorrection}
-                  onChange={(e) => setUseErrorCorrection(e.target.checked)}
+                  onChange={(e) => {
+                    setUseErrorCorrection(e.target.checked);
+                    if (e.target.checked) setUseFountain(false);
+                  }}
                 />
                 <span>Use Error Correction</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={useFountain}
+                  onChange={(e) => {
+                    setUseFountain(e.target.checked);
+                    if (e.target.checked) setUseErrorCorrection(false);
+                  }}
+                />
+                <span>Use Fountain Codes</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                 <input 
@@ -373,6 +411,7 @@ export default function DecoderView() {
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
                 <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>Verify Integrity (Optional): Select original file to compare hashes.</p>
                 <input 
+                  aria-label="Verify Integrity"
                   type="file" 
                   className="input-glass" 
                   style={{ fontSize: '0.8rem', padding: '0.5rem' }}

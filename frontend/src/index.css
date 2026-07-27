@@ -12,6 +12,8 @@
 
   --accent-gold: #b28a5d;
   --accent-gold-hover: #c49969;
+  --gold-primary: #b28a5d;
+  --gradient-gold: linear-gradient(135deg, #d4af37 0%, #b28a5d 100%);
   --accent-cyan: #00ffcc;
   --accent-pink: #ff0055;
   --accent-green: #00ff66;
@@ -147,6 +149,27 @@ h1 {
   color: var(--accent-gold-hover);
 }
 
+.btn-gold {
+  background: var(--gradient-gold);
+  color: #000;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #e5c158 0%, #c49969 100%);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+  color: #000;
+}
+
+.btn-gold:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .btn-dark {
   background: #1e1e1e;
   color: var(--text-primary);
@@ -180,27 +203,84 @@ nav {
   z-index: 100;
 }
 
+/* Modern Spotlight UX Navigation Bar */
 .nav-links {
   display: flex;
-  gap: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.35rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.nav-links a {
+/* Peer Dimming / Focus Spotlight Effect: Hovering container dims all items except hovered one */
+.nav-links:hover .nav-item {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+
+.nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 9999px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  transition: var(--transition-fast);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+  position: relative;
 }
 
-.nav-links a:hover,
-.nav-links a.active {
-  color: var(--text-primary);
+.nav-links .nav-item:hover {
+  opacity: 1 !important;
+  transform: scale(1.03) !important;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(212, 175, 55, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  opacity: 1 !important;
+  transform: scale(1.02);
+}
+
+.nav-icon {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+}
+
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon {
+  transform: scale(1.15) rotate(-5deg);
+  color: #d4af37;
+}
+
+.nav-active-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d4af37;
+  box-shadow: 0 0 8px #d4af37, 0 0 12px #d4af37;
+  display: inline-block;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.7; }
 }
 
 .nav-logout-btn {
@@ -448,4 +528,25 @@ select.input-glass {
 select.input-glass option {
   background: var(--bg-panel);
   color: var(--text-primary);
+}
+
+@keyframes copilot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(212, 175, 55, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+}
+
+@keyframes float-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }

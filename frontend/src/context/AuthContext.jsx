@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, use, useMemo, useCallback } from 'react';
+import { createContext, useState, useEffect, use, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
@@ -7,6 +7,7 @@ axios.defaults.withCredentials = true;
 
 const AuthContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => use(AuthContext);
 
 export const AuthProvider = ({ children }) => {
@@ -17,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/auth/me`);
       setUser(res.data);
-    } catch (err) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -25,8 +26,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    let ignore = false;
+    const initAuth = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/auth/me`);
+        if (!ignore) setUser(res.data);
+      } catch {
+        if (!ignore) setUser(null);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+    initAuth();
+    return () => { ignore = true; };
+  }, []);
 
   const login = useCallback(async () => {
     await fetchUser();
@@ -35,8 +48,8 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await axios.post(`${API_BASE_URL}/api/auth/logout`);
-    } catch (err) {
-      console.error("Error logging out", err);
+    } catch {
+      // ignore
     }
     setUser(null);
   }, []);

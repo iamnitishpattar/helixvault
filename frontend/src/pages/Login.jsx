@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -20,18 +20,31 @@ export default function Login() {
     setLoading(true);
     setError('');
 
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+    
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        withCredentials: true
       });
       await login();
       navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed');
+    } catch {
+      setError('Login failed');
     } finally {
       setLoading(false);
     }
@@ -73,6 +86,7 @@ export default function Login() {
             <div style={{ background: '#f5f5f5', borderRadius: '6px', padding: '2px', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <input
                 id="login-email"
+                aria-label="Email or Username"
                 type="text"
                 required
                 value={email}
@@ -85,6 +99,7 @@ export default function Login() {
               <div style={{ position: 'relative' }}>
                 <input
                   id="login-password"
+                  aria-label="Password"
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
@@ -109,6 +124,8 @@ export default function Login() {
               disabled={loading}
               onMouseOver={e => e.currentTarget.style.background = '#1a1a1a'}
               onMouseOut={e => e.currentTarget.style.background = '#2a2a2a'}
+              onFocus={e => e.currentTarget.style.background = '#1a1a1a'}
+              onBlur={e => e.currentTarget.style.background = '#2a2a2a'}
             >
               {loading ? 'Authenticating...' : 'Log in'}
             </button>

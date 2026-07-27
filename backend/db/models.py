@@ -35,4 +35,26 @@ class EncodedFile(Base):
     is_encrypted = Column(Boolean, default=False)
     has_error_correction = Column(Boolean, default=False)
     has_steganography = Column(Boolean, default=False)
+    dna_sequence = Column(String, nullable=True)
+    text_preview = Column(String, nullable=True)
     created_at = Column(DateTime, default=get_utc_now)
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    key_hash = Column(String, unique=True, index=True)
+    name = Column(String)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=get_utc_now)
+
+class AuthRateLimit(Base):
+    __tablename__ = "auth_rate_limits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, index=True)
+    identifier = Column(String, index=True, nullable=True) # e.g. email
+    endpoint = Column(String, index=True)
+    attempt_count = Column(Integer, default=1)
+    last_attempt_at = Column(DateTime, default=get_utc_now)

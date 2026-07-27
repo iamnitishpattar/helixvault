@@ -21,10 +21,13 @@ export function formatWeight(bp) {
 export const downloadFile = (content, filename) => {
   const element = document.createElement("a");
   const fileBlob = new Blob([content], {type: 'text/plain'});
-  element.href = URL.createObjectURL(fileBlob);
+  const url = URL.createObjectURL(fileBlob);
+  element.href = url;
   element.download = filename;
   document.body.appendChild(element);
   element.click();
   document.body.removeChild(element);
-  URL.revokeObjectURL(element.href);
+  URL.revokeObjectURL(url);
 };
+
+

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import { CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 export default function ForgotPassword() {
@@ -22,7 +22,7 @@ export default function ForgotPassword() {
       await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email });
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send OTP');
+      setError(err.response?.data?.detail || 'Failed to send reset code');
     } finally {
       setLoading(false);
     }
@@ -32,6 +32,11 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      setLoading(false);
+      return;
+    }
     try {
       await axios.post(`${API_BASE_URL}/api/auth/reset-password`, {
         email,
@@ -40,7 +45,7 @@ export default function ForgotPassword() {
       });
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to reset password');
+      setError(err.response?.data?.detail || 'Password reset failed');
     } finally {
       setLoading(false);
     }

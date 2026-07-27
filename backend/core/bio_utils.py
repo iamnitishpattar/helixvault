@@ -7,7 +7,12 @@ import io
 
 def calculate_metrics(dna_seq: str) -> dict:
     if not dna_seq:
-        return {"gc_content": 0, "length": 0, "melting_temp": 0}
+        return {
+            "gc_content": 0, "length": 0, "melting_temp": 0,
+            "shannon_entropy": 0.0, "homopolymer_count": 0,
+            "synthesis_cost_usd": 0.0, "physical_weight_pg": 0.0,
+            "storage_density_pb_per_gram": 215.0
+        }
 
     seq_obj = Seq(dna_seq)
     gc = gc_fraction(seq_obj) * 100
@@ -16,10 +21,36 @@ def calculate_metrics(dna_seq: str) -> dict:
     except Exception:
         mt = 0.0
 
+    # Shannon entropy: measures information density of the DNA sequence
+    # A perfectly random sequence → entropy = 2.0 bits/symbol (log2 of 4 bases)
+    from collections import Counter
+    import math
+    counts = Counter(dna_seq)
+    total = len(dna_seq)
+    entropy = -sum((c / total) * math.log2(c / total) for c in counts.values() if c > 0)
+
+    # Homopolymer count: number of consecutive identical bases (proof our algorithm works → should be 0)
+    homopolymer_count = sum(1 for i in range(len(dna_seq) - 1) if dna_seq[i] == dna_seq[i + 1])
+
+    # Synthesis cost: $0.10 per base pair (industry standard Chemical synthesis rate)
+    synthesis_cost_usd = round(total * 0.10, 2)
+
+    # Physical weight: 330 Da per nucleotide, converted to picograms
+    # 1 Da = 1.6605e-24 g = 1.6605e-12 pg
+    physical_weight_pg = round(total * 330 * 1.6605e-12, 6)
+
+    # DNA storage density: theoretical 215 petabytes per gram of DNA (Church et al., Nature 2012)
+    storage_density_pb_per_gram = 215.0
+
     return {
         "gc_content": round(gc, 2),
         "length": len(dna_seq),
-        "melting_temp": round(mt, 2)
+        "melting_temp": round(mt, 2),
+        "shannon_entropy": round(entropy, 4),
+        "homopolymer_count": homopolymer_count,
+        "synthesis_cost_usd": synthesis_cost_usd,
+        "physical_weight_pg": physical_weight_pg,
+        "storage_density_pb_per_gram": storage_density_pb_per_gram,
     }
 
 

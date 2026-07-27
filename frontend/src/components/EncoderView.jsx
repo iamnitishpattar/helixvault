@@ -1,10 +1,15 @@
-import { useState, useRef } from 'react';
-import { UploadCloud, Download, File as FileIcon, ArrowRight, RefreshCw, Cpu, Settings, Shield, Lock, FileText, Dna } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { UploadCloud, Download, File as FileIcon, ArrowRight, RefreshCw, Cpu, Settings, Shield, Lock, FileText, Dna, Zap, AlertTriangle, Database, Activity, Check } from 'lucide-react';
+import { useCarrier } from '../context/CarrierContext';
 import axios from 'axios';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import VisualPipeline from './VisualPipeline';
+import DnaVialPlaceholder from './DnaVialPlaceholder';
 import { API_BASE_URL } from '../config';
 import { calculateSHA256, formatWeight, downloadFile } from '../utils/fileUtils';
+import { getSafeApiErrorMessage, getSafeServerMessage, logClientRequestFailure } from '../utils/errorMessages';
 
 const handleKeyDown = (e, action) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -19,31 +24,119 @@ const SYNTHESIS_METHODS = {
   photo: { name: 'Photolithographic', costPerBp: 0.05, speed: '10,000 bp/sec (Array)', toxicity: 'High', color: 'var(--accent-purple)' }
 };
 
+// File validation constants (mirror backend)
+const MAX_SIZE_MB = 10;
+const ALLOWED_TYPES = [
+  'application/pdf','image/png','image/jpeg','image/gif','image/webp','text/plain',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword',
+  'video/mp4', 'video/webm', 'video/quicktime'
+];
+
+const PROGRESS_STAGES = [
+  { label: 'Encrypting with AES-256...', icon: Lock },
+  { label: 'Applying Reed-Solomon ECC...', icon: Shield },
+  { label: 'Encoding to Base-3 DNA...', icon: Dna },
+  { label: 'Embedding Steganography...', icon: Activity },
+  { label: 'Saving to Vault...', icon: Database },
+];
+
+const ENCODE_ERROR_MESSAGE = 'Encoding failed. Please check the file and selected options, then try again.';
+
 export default function EncoderView() {
   const [file, setFile] = useState(null);
+  const [fileError, setFileError] = useState(null);  // inline validation error
+  const [apiError, setApiError] = useState(null);    // API error messages
+  const [showPipelineDemo, setShowPipelineDemo] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progressStage, setProgressStage] = useState(0);  // 0=idle, 1-5=stages
   const [result, setResult] = useState(null);
   const [originalFileHash, setOriginalFileHash] = useState(null);
   const fileInputRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
+  const stageIntervalRef = useRef(null);
 
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+      if (stageIntervalRef.current) clearInterval(stageIntervalRef.current);
+    };
+  }, []);
   // Advanced Options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [password, setPassword] = useState('');
-  const [useErrorCorrection, setUseErrorCorrection] = useState(false);
+  const [useErrorCorrection, setUseErrorCorrection] = useState(true);
+  const [useFountain, setUseFountain] = useState(false);
+  const [fountainOverhead, setFountainOverhead] = useState(1.5);
   const [useSteganography, setUseSteganography] = useState(false);
-  const [synthesisMethod, setSynthesisMethod] = useState('chemical');
+  const [synthesisMethod, setSynthesisMethod] = useState('enzymatic');
+
+  const { selectedCarrier, clearCarrier } = useCarrier();
+  const location = useLocation();
+  const [carrierAccession, setCarrierAccession] = useState('');
+
+  useEffect(() => {
+    const carrierFromState = location.state?.selectedCarrier || selectedCarrier;
+    if (carrierFromState) {
+      setUseSteganography(true);
+      setShowAdvanced(true);
+      setCarrierAccession(carrierFromState);
+    }
+  }, [location.state, selectedCarrier]);
+
+
+  const validateFile = useCallback((f) => {
+    if (f.size > MAX_SIZE_MB * 1024 * 1024) {
+      return `File too large: ${(f.size / (1024 * 1024)).toFixed(1)} MB. Maximum is ${MAX_SIZE_MB} MB.`;
+    }
+    if (!ALLOWED_TYPES.includes(f.type)) {
+      return `Unsupported file type: "${f.type || 'unknown'}". Allowed: PDF, PNG, JPG, GIF, TXT, DOCX, MP4.`;
+    }
+    return null;
+  }, []);
 
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const f = e.target.files[0];
+      const err = validateFile(f);
+      setFileError(err);
+      setFile(err ? null : f);
     }
   };
+
+  // Drag-and-drop handlers
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) {
+      const err = validateFile(dropped);
+      setFileError(err);
+      setFile(err ? null : dropped);
+    }
+  }, [validateFile]);
 
   const handleEncode = async () => {
     if (!file) return;
     setLoading(true);
     setResult(null);
+    setApiError(null);
+    setProgressStage(1);
     
+    // Animate through stages while the backend processes
+    let stageIdx = 1;
+    stageIntervalRef.current = setInterval(() => {
+      stageIdx = Math.min(stageIdx + 1, PROGRESS_STAGES.length);
+      setProgressStage(stageIdx);
+    }, 2200);
+
     try {
       const hash = await calculateSHA256(file);
       setOriginalFileHash(hash);
@@ -53,37 +146,51 @@ export default function EncoderView() {
       if (password) formData.append('password', password);
       formData.append('use_error_correction', useErrorCorrection);
       formData.append('use_steganography', useSteganography);
+      if (useSteganography && carrierAccession) {
+        formData.append('steganography_carrier', carrierAccession);
+      }
+      formData.append('use_fountain', useFountain);
+      formData.append('fountain_overhead', fountainOverhead);
 
-      // We need to send authentication token if protected (assuming standard Bearer)
-      const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const res = await axios.post(`${API_BASE_URL}/api/dna/encode`, formData, { headers });
+      const res = await axios.post(`${API_BASE_URL}/api/dna/encode`, formData, { 
+        withCredentials: true 
+      });
       
       if (res.data.task_id) {
         // Polling loop for Enterprise Async Tasks
-        const intervalId = setInterval(async () => {
+        pollingIntervalRef.current = setInterval(async () => {
           try {
-            const statusRes = await axios.get(`${API_BASE_URL}/api/dna/status/${res.data.task_id}`);
+            const statusRes = await axios.get(`${API_BASE_URL}/api/dna/status/${res.data.task_id}`, {
+              withCredentials: true
+            });
             if (statusRes.data.status === 'success') {
-              clearInterval(intervalId);
+              clearInterval(pollingIntervalRef.current);
+              clearInterval(stageIntervalRef.current);
+              setProgressStage(0);
               setResult(statusRes.data);
               setLoading(false);
             } else if (statusRes.data.status === 'failed') {
-              clearInterval(intervalId);
-              alert("Error encoding file: " + statusRes.data.error);
+              clearInterval(pollingIntervalRef.current);
+              clearInterval(stageIntervalRef.current);
+              setProgressStage(0);
+              setApiError(getSafeServerMessage(statusRes.data.error, ENCODE_ERROR_MESSAGE));
               setLoading(false);
             }
           } catch (e) {
-             console.error("Polling error", e);
+             logClientRequestFailure('Encoder status polling failed; retrying', e);
           }
         }, 1500);
       } else {
+        clearInterval(stageIntervalRef.current);
+        setProgressStage(0);
         setResult(res.data);
         setLoading(false);
       }
     } catch (err) {
-      alert("Error encoding file: " + (err.response?.data?.detail || err.message));
+      clearInterval(stageIntervalRef.current);
+      setProgressStage(0);
+      setApiError(getSafeApiErrorMessage(err, ENCODE_ERROR_MESSAGE));
+    } finally {
       setLoading(false);
     }
   };
@@ -136,17 +243,26 @@ export default function EncoderView() {
   const currentMethod = SYNTHESIS_METHODS[synthesisMethod];
 
   return (
-    <div className="grid-cols-2">
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <div className="grid-cols-2" style={{ alignItems: 'start' }}>
       <div className="showcase-card">
         <h3 style={{ marginBottom: '1.5rem' }}>1. Select File & Options</h3>
         <div 
-          className={`upload-area ${file ? 'active' : ''}`}
+          className={`upload-area ${file ? 'active' : ''} ${isDragOver ? 'drag-over' : ''}`}
           onClick={() => fileInputRef.current?.click()}
           onKeyDown={(e) => handleKeyDown(e, () => fileInputRef.current?.click())}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           role="button"
           tabIndex={0}
-          style={{ marginBottom: '1.5rem' }}
-          aria-label="Upload File Dropzone"
+          style={{ 
+            marginBottom: '0.5rem',
+            borderColor: isDragOver ? 'var(--accent-cyan)' : undefined,
+            background: isDragOver ? 'rgba(0,204,255,0.06)' : undefined,
+            transition: 'border-color 0.2s, background 0.2s'
+          }}
+          aria-label="Upload File Dropzone — Click or Drag and Drop"
         >
           <input 
             type="file" 
@@ -163,11 +279,28 @@ export default function EncoderView() {
             </div>
           ) : (
             <div>
-              <UploadCloud size={48} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
-              <h4>Click or drag file to upload</h4>
+              <UploadCloud size={48} color={isDragOver ? 'var(--accent-cyan)' : 'var(--text-secondary)'} style={{ marginBottom: '1rem' }} />
+              <h4>{isDragOver ? 'Drop it!' : 'Click or drag file to upload'}</h4>
+              <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>PDF, PNG, JPG, TXT, DOCX, MP4 — max 10 MB</p>
             </div>
           )}
         </div>
+
+        {/* Inline file validation error */}
+        {fileError && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.3)', borderRadius: 'var(--radius-sm)', color: '#ff6b6b', fontSize: '0.85rem' }}>
+            <AlertTriangle size={16} />
+            {fileError}
+          </div>
+        )}
+
+        {/* API Error badge */}
+        {apiError && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.3)', borderRadius: 'var(--radius-sm)', color: '#ff6b6b', fontSize: '0.85rem' }}>
+            <AlertTriangle size={16} />
+            {apiError}
+          </div>
+        )}
 
         <div style={{ marginBottom: '1.5rem' }}>
           <button 
@@ -186,10 +319,11 @@ export default function EncoderView() {
             <div style={{ padding: '1.5rem', background: 'var(--bg-dark)', borderRadius: '0 0 var(--radius-sm) var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)', borderTop: 'none' }}>
               
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                <label htmlFor="synthesis-method" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                   <Dna size={16} color="var(--accent-green)" /> Proposed Synthesis Method
                 </label>
                 <select 
+                  id="synthesis-method"
                   className="input-glass" 
                   value={synthesisMethod}
                   onChange={(e) => setSynthesisMethod(e.target.value)}
@@ -220,19 +354,88 @@ export default function EncoderView() {
                 <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>If set, data is encrypted before DNA synthesis.</p>
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                  <input 
-                    type="checkbox" 
-                    checked={useErrorCorrection}
-                    onChange={(e) => setUseErrorCorrection(e.target.checked)}
-                    style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)' }}
-                  />
-                  <span><Shield size={16} color="var(--accent-cyan)" style={{ display: 'inline', verticalAlign: 'text-bottom' }}/> Enable Reed-Solomon Error Correction</span>
-                </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setUseErrorCorrection(!useErrorCorrection);
+                    if (!useErrorCorrection) setUseFountain(false); // Mutually exclusive for now
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setUseErrorCorrection(!useErrorCorrection);
+                      if (!useErrorCorrection) setUseFountain(false);
+                    }
+                  }}
+                  style={{ 
+                    width: '20px', height: '20px', borderRadius: '4px', border: '1px solid #333', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    background: useErrorCorrection ? '#00e5ff' : 'transparent'
+                  }}
+                >
+                  {useErrorCorrection && <Check size={14} color="#000" />}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>Enable Reed-Solomon Error Correction</div>
+                </div>
               </div>
 
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div 
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setUseFountain(!useFountain);
+                      if (!useFountain) setUseErrorCorrection(false); // Mutually exclusive for now
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setUseFountain(!useFountain);
+                        if (!useFountain) setUseErrorCorrection(false);
+                      }
+                    }}
+                    style={{ 
+                      width: '20px', height: '20px', borderRadius: '4px', border: '1px solid #333', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                      background: useFountain ? '#00e5ff' : 'transparent'
+                    }}
+                  >
+                    {useFountain && <Check size={14} color="#000" />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>Enable DNA Fountain Codes (Advanced LT)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '2px' }}>Rateless erasure codes for maximum dropout resilience.</div>
+                  </div>
+                </div>
+                {useFountain && (
+                  <div style={{ marginTop: '0.5rem', paddingLeft: '2rem', borderLeft: '2px solid rgba(0, 229, 255, 0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Redundancy Overhead:</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#00e5ff' }}>{fountainOverhead}x ({Math.round((fountainOverhead - 1) * 100)}% extra droplets)</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1.1" 
+                      max="3.0" 
+                      step="0.1" 
+                      value={fountainOverhead} 
+                      onChange={(e) => setFountainOverhead(parseFloat(e.target.value))}
+                      style={{ width: '100%', accentColor: '#00e5ff', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#666', marginTop: '0.2rem' }}>
+                      <span>1.1x (Minimal)</span>
+                      <span>1.5x (Standard)</span>
+                      <span>3.0x (Ultra-Robust)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: useSteganography && carrierAccession ? '1px solid rgba(0,255,204,0.3)' : 'none' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                   <input 
                     type="checkbox" 
@@ -240,22 +443,72 @@ export default function EncoderView() {
                     onChange={(e) => setUseSteganography(e.target.checked)}
                     style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)' }}
                   />
-                  <span><Dna size={16} style={{ display: 'inline', verticalAlign: 'text-bottom' }}/> Enable DNA Steganography</span>
+                  <span style={{ fontWeight: 500 }}><Dna size={16} style={{ display: 'inline', verticalAlign: 'text-bottom' }}/> Enable DNA Steganography</span>
                 </label>
+                {useSteganography && (
+                  <div style={{ marginTop: '0.4rem', paddingLeft: '1.75rem', borderLeft: '2px solid var(--accent-cyan)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                      <label htmlFor="stego-carrier-input" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        Host Carrier Sequence / Accession ID:
+                      </label>
+                      {carrierAccession && (
+                        <button 
+                          type="button" 
+                          onClick={() => { setCarrierAccession(''); clearCarrier(); }}
+                          style={{ background: 'none', border: 'none', color: '#ff6b6b', fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          Clear Carrier
+                        </button>
+                      )}
+                    </div>
+                    <input 
+                      id="stego-carrier-input"
+                      type="text" 
+                      placeholder="e.g. CM184355.1 (Klebsiella pneumoniae plasmid carrier)"
+                      className="input-minimal"
+                      style={{ fontSize: '0.85rem', padding: '0.6rem 0.8rem', width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: 'var(--text-primary)' }}
+                      value={carrierAccession}
+                      onChange={(e) => setCarrierAccession(e.target.value)}
+                    />
+                    <p style={{ fontSize: '0.75rem', color: carrierAccession ? 'var(--accent-green)' : '#888', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {carrierAccession ? `✨ Active Carrier [${carrierAccession}] selected for silent flanking insertion.` : 'Enter NCBI Accession ID or leave blank for default camouflage.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
+
+        {/* Multi-step progress indicator */}
+        {loading && progressStage > 0 && (() => {
+          const stage = PROGRESS_STAGES[progressStage - 1];
+          const StageIcon = stage.icon;
+          return (
+            <div style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(0,204,255,0.05)', border: '1px solid rgba(0,204,255,0.15)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <StageIcon size={18} color="var(--accent-cyan)" className="animate-spin" />
+                <span style={{ color: 'var(--accent-cyan)', fontSize: '0.9rem', fontWeight: 600 }}>{stage.label}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {PROGRESS_STAGES.map((_, i) => (
+                  <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px', background: i < progressStage ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)', transition: 'background 0.4s' }} />
+                ))}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Stage {progressStage} of {PROGRESS_STAGES.length}</p>
+            </div>
+          );
+        })()}
 
         <button 
           type="button"
           className="btn" 
           style={{ width: '100%', justifyContent: 'center', background: '#fff', color: '#000', padding: '1rem', border: 'none' }}
           onClick={handleEncode}
-          disabled={!file || loading}
+          disabled={!file || loading || !!fileError}
         >
           {loading ? <RefreshCw className="animate-spin" /> : <Cpu />}
-          {loading ? 'Synthesizing in Data Center...' : 'Encode to DNA'}
+          {loading ? `${PROGRESS_STAGES[Math.max(0, progressStage - 1)]?.label || 'Processing...'}` : 'Encode to DNA'}
         </button>
       </div>
 
@@ -264,15 +517,42 @@ export default function EncoderView() {
         
         {!result ? (
           <div className="flex-center" style={{ height: '70%', flexDirection: 'column', color: 'var(--text-secondary)' }}>
-            <ArrowRight size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-            <p>{loading ? 'Encoding data to DNA sequence...' : 'Awaiting file encoding...'}</p>
+            <DnaVialPlaceholder 
+              loading={loading} 
+              progressStage={progressStage}
+              stageLabel={PROGRESS_STAGES[Math.max(0, progressStage - 1)]?.label}
+            />
+            {!loading && (
+              <button
+                type="button"
+                onClick={() => setShowPipelineDemo(!showPipelineDemo)}
+                style={{
+                  marginTop: '1.5rem',
+                  background: showPipelineDemo ? 'rgba(255, 100, 100, 0.12)' : 'rgba(0, 255, 204, 0.12)',
+                  border: showPipelineDemo ? '1px solid #ff6b6b' : '1px solid var(--accent-cyan)',
+                  color: showPipelineDemo ? '#ff6b6b' : 'var(--accent-cyan)',
+                  padding: '0.65rem 1.3rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                  boxShadow: showPipelineDemo ? '0 0 15px rgba(255,100,100,0.15)' : '0 0 15px rgba(0,255,204,0.15)'
+                }}
+              >
+                {showPipelineDemo ? '✕ Close Pipeline Demo' : '✨ Preview "Digital-to-Biological" Pipeline Demo'}
+              </button>
+            )}
           </div>
         ) : (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
               <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
                 <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Sequence Length</p>
-                <h4>{result.metrics.length} bp</h4>
+                <h4>{result.metrics.length?.toLocaleString()} bp</h4>
               </div>
               <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
                 <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>GC Content</p>
@@ -286,6 +566,54 @@ export default function EncoderView() {
                 <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Physical Weight</p>
                 <h4 style={{ color: 'var(--accent-purple)' }}>{formatWeight(result.metrics.length)}</h4>
               </div>
+              {/* New expanded metrics */}
+              {result.metrics.shannon_entropy !== undefined && (
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+                  <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Shannon Entropy</p>
+                  <h4 style={{ color: 'var(--accent-gold)' }}>{result.metrics.shannon_entropy} <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>bits/sym</span></h4>
+                </div>
+              )}
+              {result.metrics.homopolymer_count !== undefined && (
+                <div style={{ background: result.metrics.homopolymer_count === 0 ? 'rgba(0,255,100,0.05)' : 'rgba(255,80,80,0.05)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: result.metrics.homopolymer_count === 0 ? '1px solid rgba(0,255,100,0.15)' : '1px solid rgba(255,80,80,0.15)' }}>
+                  <p className="text-muted" style={{ fontSize: '0.8rem', marginBottom: '0.2rem' }}>Homopolymers</p>
+                  <h4 style={{ color: result.metrics.homopolymer_count === 0 ? 'var(--accent-green)' : '#ff6b6b' }}>
+                    {result.metrics.homopolymer_count === 0 ? '✓ None' : result.metrics.homopolymer_count}
+                  </h4>
+                </div>
+              )}
+            </div>
+
+            {result.biosecurity_report && (
+              <div style={{ 
+                background: result.biosecurity_report.passed ? 'rgba(0, 255, 100, 0.08)' : 'rgba(255, 80, 80, 0.08)', 
+                border: result.biosecurity_report.passed ? '1px solid rgba(0, 255, 100, 0.25)' : '1px solid rgba(255, 80, 80, 0.25)', 
+                padding: '0.75rem 1rem', 
+                borderRadius: 'var(--radius-sm)', 
+                marginBottom: '1.5rem', 
+                fontSize: '0.82rem' 
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                  <strong style={{ color: result.biosecurity_report.passed ? 'var(--accent-green)' : '#ff6b6b' }}>
+                    🛡️ Enterprise Biosecurity Screen: {result.biosecurity_report.pathogen_screen_status}
+                  </strong>
+                  <span style={{ fontWeight: 600, color: result.biosecurity_report.score >= 80 ? 'var(--accent-green)' : '#ffaa00' }}>
+                    Safety Score: {result.biosecurity_report.score}/100
+                  </span>
+                </div>
+                {result.biosecurity_report.flags && result.biosecurity_report.flags.length > 0 && (
+                  <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    {result.biosecurity_report.flags.map((flag, idx) => (
+                      <div key={idx} style={{ color: flag.includes('CRITICAL') ? '#ff6b6b' : 'var(--text-secondary)' }}>• {flag}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Storage density callout */}
+            <div style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              <Zap size={14} color="var(--accent-purple)" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.4rem' }} />
+              <strong style={{ color: 'var(--accent-purple)' }}>Storage Density:</strong> 1 gram of this DNA could theoretically store <strong style={{ color: 'var(--text-primary)' }}>215 Petabytes</strong> — equivalent to ~4.3 million 50 GB Blu-ray discs. <span style={{ fontSize: '0.75rem' }}>(Church et al., Nature 2012)</span>
             </div>
 
             {originalFileHash && (
@@ -332,5 +660,18 @@ export default function EncoderView() {
         )}
       </div>
     </div>
+
+    {/* Full-Width Widescreen Visual Pipeline Display */}
+    {(showPipelineDemo || (loading && progressStage > 0)) && (
+      <div style={{ marginTop: '2.5rem', width: '100%', animation: 'fadeIn 0.3s ease' }}>
+        <VisualPipeline 
+          file={file} 
+          progressStage={progressStage} 
+          isDemo={showPipelineDemo && !loading} 
+          onClose={() => setShowPipelineDemo(false)} 
+        />
+      </div>
+    )}
+  </div>
   );
 }

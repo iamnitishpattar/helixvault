@@ -143,13 +143,17 @@ graph TD
 
 ---
 
-## 🆕 Recent Updates (v2.0)
+## 🆕 Recent Updates (v3.0)
 
+*   **Interactive Steganography Carrier Integration:** Built persistent React state management (`CarrierContext`) linking the Biological Database directly to the DNA Encoder. Selecting an NCBI carrier vector automatically expands advanced security options and pre-fills the host carrier sequence accession ID.
+*   **Systematic Plasmid Workbench Architecture:** Re-engineered the Synthetic Biology Plasmid Workbench into an ultra-clean, industry-grade 2-column dashboard featuring a unified Cloning Pipeline deck, 3-tier construct workspace, circular SVG hover tooltips, and space-justified specification ledgers.
+*   **Dynamic "Data Splicing" Overlay Visualizer:** Added a live visualizer toggle in the biological context view that highlights spliced encrypted payload blocks in bright cyan text with interactive tooltip markers.
+*   **Real-Time DNA Metrics & Homopolymer Alerts:** Implemented live statistic chips tracking GC content percentages and actively warning users against homopolymer repeats (>4 consecutive identical bases) that cause synthesis errors.
+*   **Dynamic Laboratory Vial Placeholder:** Replaced empty idle state panels with a sleek, semi-transparent animated SVG wireframe of a DNA strand and laboratory vial.
+*   **Fixed Menu Clipping & Dropdown Overflow:** Overrode CSS wrapper overflow constraints (`overflow: visible`) across showcase cards and added vertical scrollbars to ensure complete visibility of all NCBI database selections (pUC19, GFP, T7 Promoter, Cas9).
 *   **Fixed Reed-Solomon Heuristics:** Stripped out a flawed Heuristic Frame Alignment bug in the decoding engine that misinterpreted substitutions as indels, dramatically improving the accuracy of error correction.
 *   **PDF Rendering Fix:** Removed restrictive iframe sandboxing in the React frontend, allowing the browser's native PDF plugin to seamlessly render recovered `.pdf` files.
-*   **UI Polish:** Streamlined the application footer by removing unused corporate placeholder links.
-*   **BioDatabase Focus:** Removed the mock Ensembl Annotations section and centered the NCBI database tool to focus exclusively on fetching live carrier vectors (plasmids).
-*   **Dockerization:** The entire application (React, FastAPI, PostgreSQL) is now fully containerized via `docker-compose` for instant, isolated, one-click deployments.
+*   **Dockerization:** The entire application (React, FastAPI, PostgreSQL) is fully containerized via `docker-compose` for instant, isolated, one-click deployments.
 
 ---
 

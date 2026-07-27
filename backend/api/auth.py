@@ -10,26 +10,33 @@ from db.models import User, OTP
 from core.auth import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from core.email_utils import send_otp_email, send_reset_password_email
 from jose import JWTError, jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
+from slowapi.util import get_remote_address
+from core.rate_limiter import enforce_auth_rate_limit, reset_auth_rate_limit
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 class RegisterRequest(BaseModel):
-    email: str
-    password: str
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr = Field(..., max_length=100)
+    password: str = Field(..., min_length=8, max_length=64)
 
 class VerifyOTPRequest(BaseModel):
-    email: str
-    otp: str
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr = Field(..., max_length=100)
+    otp: str = Field(..., pattern=r"^\d{6}$")
 
 class ForgotPasswordRequest(BaseModel):
-    email: str
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr = Field(..., max_length=100)
 
 class ResetPasswordRequest(BaseModel):
-    email: str
-    otp: str
-    new_password: str
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr = Field(..., max_length=100)
+    otp: str = Field(..., pattern=r"^\d{6}$")
+    new_password: str = Field(..., min_length=8, max_length=64)
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -37,17 +44,17 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
-    token = request.cookies.get("access_token")
+    token = request.headers.get("Authorization")
+    if not token:
+        token = request.cookies.get("access_token")
     if not token:
         raise credentials_exception
-        
+    token = token.strip('"').strip("'")
     if token.startswith("Bearer "):
-        token = token.split(" ")[1]
-        
+        token = token[7:]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
+        email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
     except JWTError:
@@ -57,8 +64,29 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         raise credentials_exception
     return user
 
+def get_optional_current_user(request: Request, db: Session = Depends(get_db)):
+    try:
+        token = request.headers.get("Authorization")
+        if not token:
+            token = request.cookies.get("access_token")
+        if not token:
+            return None
+        token = token.strip('"').strip("'")
+        if token.startswith("Bearer "):
+            token = token[7:]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+        return db.query(User).filter(User.email == email).first()
+    except Exception:
+        return None
+
 @router.post("/register")
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+def register(request: Request, req: RegisterRequest, db: Session = Depends(get_db)):
+    ip = get_remote_address(request)
+    enforce_auth_rate_limit(db, ip, req.email, "/register")
+    
     user = db.query(User).filter(User.email == req.email).first()
     if user:
         if user.is_active:
@@ -87,7 +115,10 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     return {"status": "success", "message": "OTP sent to email"}
 
 @router.post("/verify-otp")
-def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
+def verify_otp(request: Request, req: VerifyOTPRequest, db: Session = Depends(get_db)):
+    ip = get_remote_address(request)
+    enforce_auth_rate_limit(db, ip, req.email, "/verify-otp")
+    
     otp_record = db.query(OTP).filter(OTP.email == req.email).first()
     if not otp_record:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
@@ -105,12 +136,17 @@ def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
         
     user.is_active = True
     db.delete(otp_record)
+    
+    reset_auth_rate_limit(db, ip, req.email, "/verify-otp")
     db.commit()
     
     return {"status": "success", "message": "Account verified successfully"}
 
 @router.post("/login")
-def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    ip = get_remote_address(request)
+    enforce_auth_rate_limit(db, ip, form_data.username, "/login")
+    
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -139,6 +175,8 @@ def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), 
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     
+    reset_auth_rate_limit(db, ip, form_data.username, "/login")
+    
     return {"status": "success", "email": user.email}
 
 @router.post("/logout")
@@ -147,7 +185,10 @@ def logout(response: Response):
     return {"status": "success", "message": "Logged out successfully"}
 
 @router.post("/forgot-password")
-def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(request: Request, req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    ip = get_remote_address(request)
+    enforce_auth_rate_limit(db, ip, req.email, "/forgot-password")
+    
     user = db.query(User).filter(User.email == req.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -166,7 +207,10 @@ def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
     return {"status": "success", "message": "Password reset code sent"}
 
 @router.post("/reset-password")
-def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+def reset_password(request: Request, req: ResetPasswordRequest, db: Session = Depends(get_db)):
+    ip = get_remote_address(request)
+    enforce_auth_rate_limit(db, ip, req.email, "/reset-password")
+    
     otp_record = db.query(OTP).filter(OTP.email == req.email).first()
     if not otp_record:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
@@ -183,6 +227,9 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
         
     user.hashed_password = get_password_hash(req.new_password)
     db.delete(otp_record)
+    
+    reset_auth_rate_limit(db, ip, req.email, "/reset-password")
+    reset_auth_rate_limit(db, ip, req.email, "/forgot-password") # also reset forgot-password so they can use it again if needed later
     db.commit()
     
     return {"status": "success", "message": "Password reset successfully"}

@@ -3,22 +3,28 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger("helixvault")
 
 load_dotenv()
 
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-
 def send_email_via_smtp(to_email: str, subject: str, html_content: str):
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print(f"\n[WARNING] SMTP credentials not configured. Could not send email to {to_email}")
-        print(f"[SIMULATED EMAIL CONTENT]\n{html_content}\n")
-        return False
+    load_dotenv(override=True)
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_pwd = os.getenv("SMTP_PASSWORD")
+    
+    if not smtp_email or not smtp_pwd:
+        import re
+        otp_match = re.search(r'\b\d{6}\b', html_content)
+        otp_display = f" >>> YOUR OTP CODE IS: {otp_match.group(0)} <<< " if otp_match else ""
+        logger.warning(f"\n{'='*50}\n[SIMULATED EMAIL TO: {to_email}]\nSubject: {subject}\n{otp_display}\n{'='*50}")
+        return True
         
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"HelixVault <{SMTP_EMAIL}>"
+        msg["From"] = f"HelixVault <{smtp_email}>"
         msg["To"] = to_email
         
         part = MIMEText(html_content, "html")
@@ -26,12 +32,13 @@ def send_email_via_smtp(to_email: str, subject: str, html_content: str):
         
         # Connect to Gmail SMTP server
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+        server.login(smtp_email, smtp_pwd)
+        server.sendmail(smtp_email, to_email, msg.as_string())
         server.quit()
+        logger.info(f"Successfully sent email to {to_email} via SMTP ({smtp_email})")
         return True
     except Exception as e:
-        print(f"Exception sending email via SMTP: {e}")
+        logger.error(f"Exception sending email via SMTP to {to_email}: {e}", exc_info=True)
         return False
 
 def send_otp_email(to_email: str, otp: str):

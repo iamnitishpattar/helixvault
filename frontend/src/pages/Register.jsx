@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import { Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 export default function Register() {
@@ -22,11 +22,26 @@ export default function Register() {
     setLoading(true);
     setError('');
     
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+    
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/register` , {
-        email,
-        password
-      });
+      await axios.post(`${API_BASE_URL}/api/auth/register`, { email, password });
       setSuccess('OTP sent to your email! Please check your inbox.');
       setStep(2);
     } catch (err) {
@@ -43,10 +58,7 @@ export default function Register() {
     setSuccess('');
     
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/verify-otp` , {
-        email,
-        otp
-      });
+      await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, { email, otp });
       setSuccess('Account verified successfully! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Database, Dna, LayoutDashboard, Search, LogOut, Mail, Phone, ChevronDown } from 'lucide-react';
+import { Dna, LogOut, Mail, Phone, ChevronDown, LayoutGrid, Database, Shield, Cpu, Disc, Binary } from 'lucide-react';
 
 const InstagramIcon = ({ size = 24, color = 'currentColor' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -9,17 +9,33 @@ const InstagramIcon = ({ size = 24, color = 'currentColor' }) => (
   </svg>
 );
 import Dashboard from './pages/Dashboard';
-import EncoderDecoder from './pages/EncoderDecoder';
+import EncodePage from './pages/EncodePage';
+import DecodePage from './pages/DecodePage';
 import BioDatabase from './pages/BioDatabase';
 import Vault from './pages/Vault';
+import BioCompute from './pages/BioCompute';
+import PlasmidWorkbench from './pages/PlasmidWorkbench';
+import AiCoPilot from './pages/AiCoPilot';
+import AiCoPilotWidget from './components/AiCoPilotWidget';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
+import NotFound from './pages/NotFound';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CarrierProvider } from './context/CarrierContext';
 
-function Navigation() {
-  const location = useLocation();
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+const Navigation = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
 
   // Don't show nav on login/register/forgot-password pages
   if (['/login', '/register', '/forgot-password'].includes(location.pathname)) {
@@ -33,17 +49,40 @@ function Navigation() {
         <span className="brand-text">H E L I X V A U L T</span>
       </div>
       <div className="nav-links">
-        <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-          PRODUCTS <ChevronDown size={14} />
+        <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+          <LayoutGrid size={15} className="nav-icon" />
+          <span>PRODUCTS</span>
+          {location.pathname === '/' && <span className="nav-active-dot" />}
         </Link>
-        <Link to="/encode" className={location.pathname === '/encode' ? 'active' : ''}>
-          ENCODER <ChevronDown size={14} />
+        <Link to="/encode" className={`nav-item ${location.pathname === '/encode' ? 'active' : ''}`}>
+          <Dna size={15} className="nav-icon" />
+          <span>ENCODER</span>
+          {location.pathname === '/encode' && <span className="nav-active-dot" />}
         </Link>
-        <Link to="/bio" className={location.pathname === '/bio' ? 'active' : ''}>
-          DATABASE <ChevronDown size={14} />
+        <Link to="/decode" className={`nav-item ${location.pathname === '/decode' ? 'active' : ''}`}>
+          <Binary size={15} className="nav-icon" />
+          <span>DECODER</span>
+          {location.pathname === '/decode' && <span className="nav-active-dot" />}
         </Link>
-        <Link to="/vault" className={location.pathname === '/vault' ? 'active' : ''}>
-          VAULT <ChevronDown size={14} />
+        <Link to="/bio" className={`nav-item ${location.pathname === '/bio' ? 'active' : ''}`}>
+          <Database size={15} className="nav-icon" />
+          <span>DATABASE</span>
+          {location.pathname === '/bio' && <span className="nav-active-dot" />}
+        </Link>
+        <Link to="/vault" className={`nav-item ${location.pathname === '/vault' ? 'active' : ''}`}>
+          <Shield size={15} className="nav-icon" />
+          <span>VAULT</span>
+          {location.pathname === '/vault' && <span className="nav-active-dot" />}
+        </Link>
+        <Link to="/compute" className={`nav-item ${location.pathname === '/compute' ? 'active' : ''}`}>
+          <Cpu size={15} className="nav-icon" />
+          <span>BIO-COMPUTE</span>
+          {location.pathname === '/compute' && <span className="nav-active-dot" />}
+        </Link>
+        <Link to="/plasmid" className={`nav-item ${location.pathname === '/plasmid' ? 'active' : ''}`}>
+          <Disc size={15} className="nav-icon" />
+          <span>PLASMID</span>
+          {location.pathname === '/plasmid' && <span className="nav-active-dot" />}
         </Link>
       </div>
       <div className="flex-center" style={{ gap: '1.5rem' }}>
@@ -63,14 +102,6 @@ function Navigation() {
     </nav>
   );
 }
-
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-};
 
 function Footer() {
   const location = useLocation();
@@ -101,8 +132,9 @@ function Footer() {
           <h4 style={{ color: 'var(--text-primary)', marginBottom: '1.5rem', letterSpacing: '0.1em', fontSize: '0.85rem' }}>PRODUCTS</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem' }}>
             <li><Link to="/encode" className="footer-link">DNA Encoder</Link></li>
-            <li><Link to="/encode" className="footer-link">Data Decoder</Link></li>
+            <li><Link to="/decode" className="footer-link">Data Decoder</Link></li>
             <li><Link to="/vault" className="footer-link">Secure Vault</Link></li>
+            <li><Link to="/plasmid" className="footer-link">Plasmid Workbench</Link></li>
           </ul>
         </div>
 
@@ -124,28 +156,38 @@ function Footer() {
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="app-wrapper">
-        <Router>
-          <div className="main-window">
-            <Navigation />
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
+    <CarrierProvider>
+      <AuthProvider>
+        <div className="app-wrapper">
+          <Router>
+            <div className="main-window">
+              <Navigation />
+              <AiCoPilotWidget />
+              <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <ErrorBoundary>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
 
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/encode" element={<ProtectedRoute><EncoderDecoder /></ProtectedRoute>} />
-                <Route path="/bio" element={<ProtectedRoute><BioDatabase /></ProtectedRoute>} />
-                <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </Router>
-      </div>
-    </AuthProvider>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/encode" element={<ProtectedRoute><EncodePage /></ProtectedRoute>} />
+                    <Route path="/decode" element={<ProtectedRoute><DecodePage /></ProtectedRoute>} />
+                    <Route path="/bio" element={<ProtectedRoute><BioDatabase /></ProtectedRoute>} />
+                    <Route path="/vault" element={<ProtectedRoute><Vault /></ProtectedRoute>} />
+                    <Route path="/compute" element={<ProtectedRoute><BioCompute /></ProtectedRoute>} />
+                    <Route path="/plasmid" element={<ProtectedRoute><PlasmidWorkbench /></ProtectedRoute>} />
+                    <Route path="/copilot" element={<ProtectedRoute><AiCoPilot /></ProtectedRoute>} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </ErrorBoundary>
+              </main>
+              <Footer />
+            </div>
+          </Router>
+        </div>
+      </AuthProvider>
+    </CarrierProvider>
   );
 }
 

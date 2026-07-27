@@ -2,38 +2,16 @@ import { useState, useEffect } from 'react';
 import { Archive, Lock, Shield, Dna, MapPin, FileText } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import { logClientRequestFailure } from '../utils/errorMessages';
+import HealthStatusModal, { HealthBadge } from '../components/HealthStatusModal';
 
-function Vault() {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+const downloadProtocol = (item) => {
+  const rack = Math.floor((item.id * 7) % 50) + 1;
+  const box = (item.id % 10) + 1;
+  const tube = `A${item.id}`;
+  const location = `Rack ${rack}, Box ${box}, Tube ${tube}`;
 
-  useEffect(() => {
-    let ignore = false;
-    const fetchHistory = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${API_BASE_URL}/api/dna/history`, { headers });
-        if (!ignore) {
-          setHistory(res.data);
-        }
-      } catch (err) {
-        if (!ignore) console.error("Failed to fetch history", err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    fetchHistory();
-    return () => { ignore = true; };
-  }, []);
-
-  const downloadProtocol = (item) => {
-    const rack = Math.floor((item.id * 7) % 50) + 1;
-    const box = (item.id % 10) + 1;
-    const tube = `A${item.id}`;
-    const location = `Rack ${rack}, Box ${box}, Tube ${tube}`;
-
-    const protocolText = `================================================
+  const protocolText = `================================================
 HELIXVAULT ENTERPRISE DATA CENTER S.O.P.
 ================================================
 Document ID: HV-SOP-${item.id}
@@ -69,15 +47,43 @@ Step 6: If Steganography=YES, apply marker isolation protocol before decoding.
 Authorized by: HelixVault Automated Systems
 ================================================
 `;
-    const blob = new Blob([protocolText], { type: 'text/plain' });
-    const element = document.createElement("a");
-    element.href = URL.createObjectURL(blob);
-    element.download = `SOP_${item.filename}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    URL.revokeObjectURL(element.href);
-  };
+  const blob = new Blob([protocolText], { type: 'text/plain' });
+  const element = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  element.href = url;
+  element.download = `SOP_${item.filename}.txt`;
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+  URL.revokeObjectURL(url);
+};
+
+function Vault() {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedHealthItem, setSelectedHealthItem] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/dna/history`, { 
+          withCredentials: true 
+        });
+        if (!ignore) {
+          setHistory(res.data);
+        }
+      } catch (err) {
+        if (!ignore) logClientRequestFailure('Failed to fetch vault history', err);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+    fetchHistory();
+    return () => { ignore = true; };
+  }, []);
+
+
 
   return (
     <div style={{ padding: '2rem 3rem' }}>
@@ -94,6 +100,18 @@ Authorized by: HelixVault Automated Systems
             <Archive size={48} color="var(--text-secondary)" style={{ opacity: 0.5, marginBottom: '1rem' }} />
             <h3>Your Enterprise Vault is Empty</h3>
             <p className="text-muted">Encode some files to provision them in physical cold storage.</p>
+            <div style={{ marginTop: '2rem', background: 'rgba(0, 255, 102, 0.05)', border: '1px solid rgba(0, 255, 102, 0.2)', padding: '1.5rem', borderRadius: '12px', display: 'inline-block', textAlign: 'left', maxWidth: '500px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>✨ Demo Payload Diagnostics:</span>
+                <HealthBadge
+                  filename="demo_genome_sample.bin"
+                  onClick={() => setSelectedHealthItem({ filename: "demo_genome_sample.bin" })}
+                />
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Click the badge above to test our human-readable DNA Health & Decay status modal with Fountain code degradation diagnostics.
+              </p>
+            </div>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -103,6 +121,7 @@ Authorized by: HelixVault Automated Systems
                 <th style={{ padding: '1rem' }}>Physical Location</th>
                 <th style={{ padding: '1rem' }}>DNA Length (bp)</th>
                 <th style={{ padding: '1rem' }}>Features</th>
+                <th style={{ padding: '1rem' }}>Health Status</th>
                 <th style={{ padding: '1rem' }}>Actions</th>
               </tr>
             </thead>
@@ -124,6 +143,13 @@ Authorized by: HelixVault Automated Systems
                     {item.has_steganography && <Dna size={16} color="var(--text-primary)" title="Steganography" />}
                   </td>
                   <td style={{ padding: '1rem' }}>
+                    <HealthBadge
+                      filename={item.filename}
+                      onClick={() => setSelectedHealthItem(item)}
+                      size="small"
+                    />
+                  </td>
+                  <td style={{ padding: '1rem' }}>
                     <button 
                       type="button" 
                       className="btn" 
@@ -139,6 +165,12 @@ Authorized by: HelixVault Automated Systems
           </table>
         )}
       </div>
+
+      <HealthStatusModal
+        isOpen={!!selectedHealthItem}
+        onClose={() => setSelectedHealthItem(null)}
+        fileItem={selectedHealthItem}
+      />
     </div>
   );
 }
