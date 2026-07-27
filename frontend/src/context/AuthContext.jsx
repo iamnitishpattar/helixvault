@@ -27,6 +27,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let ignore = false;
+    // Timeout fallback: if backend is cold-starting (Render free tier),
+    // don't keep the user staring at a blank screen forever
+    const timeout = setTimeout(() => {
+      if (!ignore) setLoading(false);
+    }, 5000);
     const initAuth = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/api/auth/me`);
@@ -38,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
     initAuth();
-    return () => { ignore = true; };
+    return () => { ignore = true; clearTimeout(timeout); };
   }, []);
 
   const login = useCallback(async () => {
