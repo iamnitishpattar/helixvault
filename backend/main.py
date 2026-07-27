@@ -38,7 +38,12 @@ logger.info("Starting HelixVault Enterprise Backend...")
 SERVER_START_TIME = time.time()
 
 # Create database tables
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified successfully.")
+except Exception as e:
+    logger.critical(f"FATAL: Could not connect to database! Please check your DATABASE_URL password and credentials in Render/Supabase. Details: {e}")
+    raise
 
 app = FastAPI(
     title="HelixVault API",
