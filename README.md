@@ -54,49 +54,68 @@ graph TD
     classDef backend fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff;
     classDef storage fill:#0f172a,stroke:#f59e0b,stroke-width:2px,color:#fff;
     classDef bio fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#fff;
+    classDef ext fill:#1e1b4b,stroke:#a855f7,stroke-width:2px,color:#fff;
 
     %% Client Side
-    subgraph Client [Client Interface]
-        UI[React + Vite UI]:::frontend
-        3D[3D Mutation Simulator]:::frontend
-        Charts[Recharts Analytics]:::frontend
+    subgraph Client ["Client Interface & State Engine"]
+        UI["React + Vite Glassmorphic UI"]:::frontend
+        3D["3D Mutation & Damage Simulator"]:::frontend
+        Plasmid["Plasmid Workbench & SVG Map Engine"]:::frontend
+        Context["CarrierContext State Pipeline"]:::frontend
+        Metrics["Real-Time GC & Homopolymer Alerting"]:::frontend
+    end
+
+    %% External Bio Databases
+    subgraph External ["External Genomic Databases"]
+        NCBI["NCBI Entrez & GenBank API"]:::ext
     end
 
     %% Backend Services
-    subgraph Server [FastAPI Backend]
-        API[RESTful API Gateway]:::backend
-        Auth[JWT Authentication]:::backend
+    subgraph Server ["FastAPI Backend Engine"]
+        API["RESTful API Gateway"]:::backend
+        Auth["JWT Authentication & Security"]:::backend
         
-        subgraph Core Logic
-            Encrypt[AES-256 Encryption]:::backend
-            RS[Reed-Solomon ECC]:::backend
-            Encode[Base-3 Encoder]:::backend
-            Stego[DNA Steganography]:::backend
+        subgraph Core ["Core Encoding & Synthesis Logic"]
+            Validator["Bio-Constraint & Homopolymer Validator"]:::backend
+            Encrypt["AES-256 Cryptographic Engine"]:::backend
+            RS["Reed-Solomon Error Correction"]:::backend
+            Encode["Base-3 DNA Codec Engine"]:::backend
+            Stego["DNA Steganography & Carrier Splicer"]:::backend
+            PlasmidEngine["Restriction Cut & MCS Cloning Engine"]:::backend
         end
         
         API --> Auth
-        API --> Encrypt
+        API --> Validator
+        Validator --> Encrypt
         Encrypt --> RS
         RS --> Encode
         Encode --> Stego
+        API --> PlasmidEngine
     end
 
     %% Storage & Biology
-    subgraph Storage [Data Persistence]
-        DB[(PostgreSQL)]:::storage
+    subgraph Storage ["Data Persistence"]
+        DB[("PostgreSQL Database")]:::storage
+        Vault[("HelixVault File Storage")]:::storage
     end
     
-    subgraph Biological Output [Biological Domain]
-        GenBank[GenBank/FASTA Files]:::bio
-        SyntheticDNA[Synthetic DNA]:::bio
+    subgraph BiologicalOutput ["Biological Domain"]
+        GenBank["Annotated GenBank .gb / FASTA Files"]:::bio
+        SyntheticDNA["Picogram-Scale Synthetic DNA"]:::bio
     end
 
     %% Connections
-    UI <-->|JSON & Files| API
-    3D -->|Mutation Params| API
+    UI <-->|"REST / FormData"| API
+    3D -->|"Mutation Simulation Params"| API
+    Plasmid <-->|"Vector Cloning & Features"| PlasmidEngine
+    NCBI -->|"Accession IDs & Vector Sequences"| Context
+    Context -->|"Pre-Fill Carrier ID"| UI
+    Metrics -->|"Live Sequence Scanning"| UI
     Auth <--> DB
+    Stego <--> Vault
     Stego --> GenBank
-    GenBank -.->|Physical Synthesis| SyntheticDNA
+    PlasmidEngine --> GenBank
+    GenBank -.->|"Physical Lab Synthesis"| SyntheticDNA
 ```
 </div>
 
