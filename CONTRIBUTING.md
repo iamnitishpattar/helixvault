@@ -12,5 +12,3 @@ Thank you for your interest in HelixVault! As a mobile-only maintainer, I rely h
 * Implementing standard DNA algorithms (like Goldman's algorithm or DNA Fountain codes).
 * Creating a public API gateway out of the existing FastAPI endpoints.
 * Building a lightweight CLI tool (`helix-cli`) for terminal-based encoding.
-
-* 
