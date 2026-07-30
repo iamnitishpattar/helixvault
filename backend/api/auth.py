@@ -171,7 +171,7 @@ def login(request: Request, response: Response, form_data: OAuth2PasswordRequest
         value=f"Bearer {access_token}",
         httponly=True,
         samesite="lax",
-        secure=False, # Set to True in production with HTTPS
+        secure=True,  # Render serves over HTTPS
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     
