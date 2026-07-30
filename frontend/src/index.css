@@ -553,8 +553,9 @@ select.input-glass option {
 
 /* =====================================================
    MOBILE RESPONSIVENESS
-   Hamburger button visible only on mobile (<= 768px).
-   Desktop nav/actions hidden on mobile.
+   Hamburger visible on screens <= 1024px.
+   This covers native mobile AND "Desktop Mode" on phones
+   (which emulates ~980px viewport width).
    ===================================================== */
 
 /* Hamburger — hidden on desktop */
@@ -583,7 +584,7 @@ select.input-glass option {
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   /* Remove outer app padding on very small screens */
   .app-wrapper {
     padding: 0.5rem;
@@ -672,7 +673,7 @@ select.input-glass option {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .brand-text {
     font-size: 0.6rem;
     letter-spacing: 0.2em;
