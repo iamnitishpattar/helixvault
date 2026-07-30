@@ -41,11 +41,15 @@ export default function Register() {
     }
 
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/register`, { email, password });
+      await axios.post(`${API_BASE_URL}/api/auth/register`, { email, password }, { timeout: 25000 });
       setSuccess('OTP sent to your email! Please check your inbox.');
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed');
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('The server is waking up (free tier). Please wait 30 seconds and try again.');
+      } else {
+        setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -58,11 +62,15 @@ export default function Register() {
     setSuccess('');
     
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, { email, otp });
+      await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, { email, otp }, { timeout: 25000 });
       setSuccess('Account verified successfully! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid OTP');
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('The server is waking up (free tier). Please wait 30 seconds and try again.');
+      } else {
+        setError(err.response?.data?.detail || 'Invalid OTP. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

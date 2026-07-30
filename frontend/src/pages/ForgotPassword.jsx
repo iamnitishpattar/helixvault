@@ -19,10 +19,14 @@ export default function ForgotPassword() {
     setLoading(true);
     setError('');
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email });
+      await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email }, { timeout: 25000 });
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to send reset code');
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('The server is waking up (free tier). Please wait 30 seconds and try again.');
+      } else {
+        setError(err.response?.data?.detail || 'Failed to send reset code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -42,10 +46,14 @@ export default function ForgotPassword() {
         email,
         otp,
         new_password: newPassword
-      });
+      }, { timeout: 25000 });
       setStep(3);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Password reset failed');
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('The server is waking up (free tier). Please wait 30 seconds and try again.');
+      } else {
+        setError(err.response?.data?.detail || 'Password reset failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
