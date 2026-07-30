@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Dna, LogOut, Mail, Phone, ChevronDown, LayoutGrid, Database, Shield, Cpu, Disc, Binary } from 'lucide-react';
+import { Dna, LogOut, Mail, Phone, ChevronDown, LayoutGrid, Database, Shield, Cpu, Disc, Binary, Menu, X } from 'lucide-react';
 
 const InstagramIcon = ({ size = 24, color = 'currentColor' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,70 +37,103 @@ const ProtectedRoute = ({ children }) => {
 const Navigation = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Don't show nav on login/register/forgot-password pages
   if (['/login', '/register', '/forgot-password'].includes(location.pathname)) {
     return null;
   }
 
+  const closeMobile = () => setMobileOpen(false);
+
+  const navLinks = [
+    { to: '/', icon: <LayoutGrid size={15} className="nav-icon" />, label: 'PRODUCTS' },
+    { to: '/encode', icon: <Dna size={15} className="nav-icon" />, label: 'ENCODER' },
+    { to: '/decode', icon: <Binary size={15} className="nav-icon" />, label: 'DECODER' },
+    { to: '/bio', icon: <Database size={15} className="nav-icon" />, label: 'DATABASE' },
+    { to: '/vault', icon: <Shield size={15} className="nav-icon" />, label: 'VAULT' },
+    { to: '/compute', icon: <Cpu size={15} className="nav-icon" />, label: 'BIO-COMPUTE' },
+    { to: '/plasmid', icon: <Disc size={15} className="nav-icon" />, label: 'PLASMID' },
+  ];
+
   return (
-    <nav>
-      <div className="flex-center" style={{ gap: '1rem' }}>
-        <Dna color="var(--text-primary)" size={28} />
-        <span className="brand-text">H E L I X V A U L T</span>
-      </div>
-      <div className="nav-links">
-        <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-          <LayoutGrid size={15} className="nav-icon" />
-          <span>PRODUCTS</span>
-          {location.pathname === '/' && <span className="nav-active-dot" />}
-        </Link>
-        <Link to="/encode" className={`nav-item ${location.pathname === '/encode' ? 'active' : ''}`}>
-          <Dna size={15} className="nav-icon" />
-          <span>ENCODER</span>
-          {location.pathname === '/encode' && <span className="nav-active-dot" />}
-        </Link>
-        <Link to="/decode" className={`nav-item ${location.pathname === '/decode' ? 'active' : ''}`}>
-          <Binary size={15} className="nav-icon" />
-          <span>DECODER</span>
-          {location.pathname === '/decode' && <span className="nav-active-dot" />}
-        </Link>
-        <Link to="/bio" className={`nav-item ${location.pathname === '/bio' ? 'active' : ''}`}>
-          <Database size={15} className="nav-icon" />
-          <span>DATABASE</span>
-          {location.pathname === '/bio' && <span className="nav-active-dot" />}
-        </Link>
-        <Link to="/vault" className={`nav-item ${location.pathname === '/vault' ? 'active' : ''}`}>
-          <Shield size={15} className="nav-icon" />
-          <span>VAULT</span>
-          {location.pathname === '/vault' && <span className="nav-active-dot" />}
-        </Link>
-        <Link to="/compute" className={`nav-item ${location.pathname === '/compute' ? 'active' : ''}`}>
-          <Cpu size={15} className="nav-icon" />
-          <span>BIO-COMPUTE</span>
-          {location.pathname === '/compute' && <span className="nav-active-dot" />}
-        </Link>
-        <Link to="/plasmid" className={`nav-item ${location.pathname === '/plasmid' ? 'active' : ''}`}>
-          <Disc size={15} className="nav-icon" />
-          <span>PLASMID</span>
-          {location.pathname === '/plasmid' && <span className="nav-active-dot" />}
-        </Link>
-      </div>
-      <div className="flex-center" style={{ gap: '1.5rem' }}>
-        {user ? (
-          <button type="button" onClick={logout} className="nav-logout-btn">
-            <LogOut size={16} /> LOGOUT
-          </button>
-        ) : (
-          <Link to="/login" className="nav-logout-btn" style={{ textDecoration: 'none' }}>
-            LOGIN
+    <>
+      <nav>
+        <div className="flex-center" style={{ gap: '1rem' }}>
+          <Dna color="var(--text-primary)" size={28} />
+          <span className="brand-text">H E L I X V A U L T</span>
+        </div>
+
+        {/* Desktop nav links */}
+        <div className="nav-links nav-links-desktop">
+          {navLinks.map(({ to, icon, label }) => (
+            <Link key={to} to={to} className={`nav-item ${location.pathname === to ? 'active' : ''}`}>
+              {icon}
+              <span>{label}</span>
+              {location.pathname === to && <span className="nav-active-dot" />}
+            </Link>
+          ))}
+        </div>
+
+        {/* Desktop right actions */}
+        <div className="flex-center nav-actions-desktop" style={{ gap: '1.5rem' }}>
+          {user ? (
+            <button type="button" onClick={logout} className="nav-logout-btn">
+              <LogOut size={16} /> LOGOUT
+            </button>
+          ) : (
+            <Link to="/login" className="nav-logout-btn" style={{ textDecoration: 'none' }}>
+              LOGIN
+            </Link>
+          )}
+          <Link to="/encode" className="btn btn-outline-gold">
+            GET STARTED
           </Link>
-        )}
-        <Link to="/encode" className="btn btn-outline-gold">
-          GET STARTED
-        </Link>
-      </div>
-    </nav>
+        </div>
+
+        {/* Hamburger button — mobile only */}
+        <button
+          type="button"
+          className="nav-hamburger"
+          onClick={() => setMobileOpen(o => !o)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </nav>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="mobile-nav-drawer">
+          {navLinks.map(({ to, icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`mobile-nav-item ${location.pathname === to ? 'active' : ''}`}
+              onClick={closeMobile}
+            >
+              {icon}
+              <span>{label}</span>
+              {location.pathname === to && <span className="nav-active-dot" />}
+            </Link>
+          ))}
+          <div className="mobile-nav-actions">
+            {user ? (
+              <button type="button" onClick={() => { logout(); closeMobile(); }} className="btn btn-dark" style={{ width: '100%', justifyContent: 'center' }}>
+                <LogOut size={16} /> LOGOUT
+              </button>
+            ) : (
+              <Link to="/login" className="btn btn-outline-gold" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }} onClick={closeMobile}>
+                LOGIN
+              </Link>
+            )}
+            <Link to="/encode" className="btn btn-gold" style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }} onClick={closeMobile}>
+              GET STARTED
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
