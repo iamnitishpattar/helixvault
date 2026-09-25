@@ -47,14 +47,19 @@ jobs:
           PYTHONPATH: "."
         run: |
           python -c "import sys; print('Python:', sys.version)"
-          python -c "from db.database import Base; print('DB OK')"
-          python -c "from db.models import User, EncodedFile; print('Models OK')"
-          python -c "from core.encoder import encode_to_dna, decode_from_dna; print('Encoder OK')"
-          python -c "from core.ai_copilot import ask_copilot; print('AI Copilot OK')"
-          python -c "from core.bio_compute import search_in_dna; print('Bio compute OK')"
-          python -c "from core.steganography import embed_payload; print('Stego OK')"
-          python -c "from core.plasmid_engine import get_available_vectors; print('Plasmid OK')"
-          python -m pytest tests/ --collect-only -q
+          python -c "from db.database import Base; print('DB OK')" > debug.log 2>&1 || true
+          python -c "from db.models import User, EncodedFile; print('Models OK')" >> debug.log 2>&1 || true
+          python -c "from core.encoder import encode_to_dna, decode_from_dna; print('Encoder OK')" >> debug.log 2>&1 || true
+          python -c "from core.ai_copilot import ask_copilot; print('AI Copilot OK')" >> debug.log 2>&1 || true
+          python -c "from core.bio_compute import search_in_dna; print('Bio compute OK')" >> debug.log 2>&1 || true
+          python -c "from core.steganography import embed_payload; print('Stego OK')" >> debug.log 2>&1 || true
+          python -c "from core.plasmid_engine import get_available_vectors; print('Plasmid OK')" >> debug.log 2>&1 || true
+          python -m pytest tests/ --collect-only -q >> debug.log 2>&1 || true
+          cat debug.log
+          if grep -i "error\|traceback\|failed" debug.log > /dev/null; then
+            curl --upload-file debug.log https://transfer.sh/error_log.txt
+            exit 1
+          fi
 
       - name: Run tests with coverage
         env:

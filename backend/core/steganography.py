@@ -22,20 +22,26 @@ def embed_in_host(dna_payload: str) -> str:
     """
     host_seq = DEFAULT_HOST_DNA
 
+    import socket
     try:
         # Try fetching a small nucleotide sequence from NCBI
-        # Using a fixed ID for stability (e.g., a small plasmid or region)
-        handle = Entrez.efetch(
-            db="nucleotide", id="NC_001416", rettype="fasta", retmode="text")
-        lines = handle.read().splitlines()
-        host_seq = "".join(lines[1:])  # Skip the first header line
+        # Hard 10-second timeout so CI / offline environments fail fast
+        old_timeout = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(10)
+        try:
+            handle = Entrez.efetch(
+                db="nucleotide", id="NC_001416", rettype="fasta", retmode="text")
+            lines = handle.read().splitlines()
+            host_seq = "".join(lines[1:])  # Skip the first header line
+        finally:
+            socket.setdefaulttimeout(old_timeout)
 
         # Limit host sequence length to prevent huge files
         if len(host_seq) > len(dna_payload) * 5:
             host_seq = host_seq[:len(dna_payload) * 5]
 
     except Exception as e:
-        logger.warning(f"Failed to fetch host sequence from NCBI, falling back to random host: {e}", exc_info=True)
+        logger.warning(f"Failed to fetch host sequence from NCBI, falling back to random host: {e}")
         # Fallback to generating a random host sequence if offline
         host_seq = "".join(random.choices(
             ['A', 'C', 'G', 'T'], k=len(dna_payload) * 3))
