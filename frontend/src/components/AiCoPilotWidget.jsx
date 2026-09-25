@@ -67,7 +67,7 @@ export default function AiCoPilotWidget() {
         question: questionText
       }, {
         withCredentials: true,
-        timeout: 15000
+        timeout: 30000
       });
       
       const aiData = res.data.data;
@@ -81,11 +81,16 @@ export default function AiCoPilotWidget() {
         }
       ]);
     } catch (err) {
+      // Surface actual backend error detail for LLM/compute errors
+      const detail = err?.response?.data?.detail;
+      const errorMsg = (detail && typeof detail === 'string' && !detail.includes('\\'))
+        ? detail
+        : 'Failed to communicate with AI Co-Pilot service.';
       setMessages(prev => [
         ...prev,
         {
           sender: 'ai',
-          text: `### ⚠️ Computation Error\n\n${getSafeApiErrorMessage(err, 'Failed to communicate with AI Co-Pilot service.')}`,
+          text: `### ⚠️ Computation Error\n\n${errorMsg}`,
           isError: true
         }
       ]);
@@ -176,11 +181,13 @@ export default function AiCoPilotWidget() {
         type="button"
         onClick={() => setIsOpen(true)}
         className="btn-gold"
+        aria-label="Open AI Co-Pilot Widget"
+        aria-expanded={isOpen}
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          zIndex: 9999,
+          zIndex: 140,
           borderRadius: '50px',
           padding: '0.85rem 1.5rem',
           display: 'flex',
@@ -209,7 +216,7 @@ export default function AiCoPilotWidget() {
         position: 'fixed',
         bottom: '24px',
         right: '24px',
-        zIndex: 10000,
+        zIndex: 140,
         width: isExpanded ? '600px' : '410px',
         maxWidth: '92vw',
         height: isExpanded ? '80vh' : '580px',
@@ -256,6 +263,8 @@ export default function AiCoPilotWidget() {
             onClick={() => setIsExpanded(!isExpanded)}
             style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#cbd5e1', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             title={isExpanded ? "Restore size" : "Expand window"}
+            aria-label={isExpanded ? "Restore size" : "Expand window"}
+            aria-expanded={isExpanded}
           >
             {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
@@ -264,6 +273,7 @@ export default function AiCoPilotWidget() {
             onClick={() => { setIsOpen(false); navigate('/copilot'); }}
             style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--gold-primary)', padding: '0.4rem 0.6rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}
             title="Open in Full Page"
+            aria-label="Open AI Co-Pilot in full page"
           >
             Full Page
           </button>
@@ -272,6 +282,7 @@ export default function AiCoPilotWidget() {
             onClick={() => setIsOpen(false)}
             style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#cbd5e1', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             title="Close widget"
+            aria-label="Close AI Co-Pilot widget"
           >
             <X size={18} />
           </button>
@@ -355,6 +366,7 @@ export default function AiCoPilotWidget() {
             type="button"
             onClick={() => handleSend(chip)}
             disabled={loading}
+            aria-label={`Ask AI: ${chip}`}
             style={{
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.1)',
@@ -381,6 +393,7 @@ export default function AiCoPilotWidget() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask AI Co-Pilot..."
           disabled={loading}
+          aria-label="Ask AI Co-Pilot message input"
           style={{
             flex: '1',
             padding: '0.75rem 1rem',
@@ -396,6 +409,7 @@ export default function AiCoPilotWidget() {
           type="submit"
           disabled={loading || !input.trim()}
           className="btn btn-gold"
+          aria-label="Send message"
           style={{ padding: '0 1.25rem', height: 'auto', borderRadius: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <Send size={16} />

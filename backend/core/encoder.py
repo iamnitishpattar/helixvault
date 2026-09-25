@@ -1,9 +1,7 @@
 import struct
-
 from typing import Tuple
 
 # Mapping of previous base to the available next bases to avoid homopolymers
-# 0, 1, 2 map to the 3 available bases
 NEXT_BASE_MAP = {
     'A': ['C', 'G', 'T'],
     'C': ['A', 'G', 'T'],
@@ -19,23 +17,36 @@ REV_BASE_MAP = {
     'T': {'A': 0, 'C': 1, 'G': 2}
 }
 
-
 def byte_to_base3(b: int) -> list[int]:
     """Convert a byte (0-255) to a list of 6 base-3 digits (0, 1, 2)."""
     digits = []
     for _ in range(6):
         digits.append(b % 3)
         b = b // 3
-    # Reverse to keep it big-endian like
     return digits[::-1]
 
-
 def base3_to_byte(digits: list[int]) -> int:
-    """Convert a list of 6 base-3 digits back to a byte."""
     b = 0
     for d in digits:
         b = b * 3 + d
     return b
+
+# Precompute lookup tables for blistering fast O(1) translation
+ENCODE_TABLE = {'A': [], 'C': [], 'G': [], 'T': []}
+DECODE_TABLE = {}
+
+for start_base in ['A', 'C', 'G', 'T']:
+    for b in range(256):
+        b3 = byte_to_base3(b)
+        dna_chunk = []
+        curr = start_base
+        for digit in b3:
+            nxt = NEXT_BASE_MAP[curr][digit]
+            dna_chunk.append(nxt)
+            curr = nxt
+        chunk_str = "".join(dna_chunk)
+        ENCODE_TABLE[start_base].append((curr, chunk_str))
+        DECODE_TABLE[(start_base, chunk_str)] = (curr, b)
 
 
 def encode_data_to_dna(data: bytes, filename: str) -> str:
@@ -44,87 +55,87 @@ def encode_data_to_dna(data: bytes, filename: str) -> str:
     Header format: [Filename Length (1 byte)] [Filename] [Data Length (4 bytes)] [Data]
     """
     filename_bytes = filename.encode('utf-8')
-    filename_len = len(filename_bytes)
-    if filename_len > 255:
-        filename_bytes = filename_bytes[:255]
-        filename_len = 255
-
-    data_len = len(data)
+    filename_len = min(len(filename_bytes), 255)
+    filename_bytes = filename_bytes[:filename_len]
 
     # Construct the full payload
     payload = bytearray()
     payload.append(filename_len)
     payload.extend(filename_bytes)
-    payload.extend(struct.pack('>I', data_len))  # 4 bytes unsigned int
+    payload.extend(struct.pack('>I', len(data)))
     payload.extend(data)
 
-    # Encode payload to DNA
-    dna = ['A']  # Starting base to bootstrap the process
+    # Fast encoding using precomputed lookup table
+    dna_chunks = []
     current_base = 'A'
-
+    
+    # Using list comprehension or map is even faster, but standard loop over lookup table is enough for 100MB
     for b in payload:
-        b3_digits = byte_to_base3(b)
-        for digit in b3_digits:
-            next_base = NEXT_BASE_MAP[current_base][digit]
-            dna.append(next_base)
-            current_base = next_base
+        current_base, chunk = ENCODE_TABLE[current_base][b]
+        dna_chunks.append(chunk)
 
-    # Remove the bootstrap base for the final string
-    return "".join(dna[1:])
+    return "".join(dna_chunks)
 
 
 def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
     """
     Decode a DNA sequence back to file data and filename.
-    Includes a Heuristic Sequence Alignment to fix frame-shifts caused by biological Indels.
+    Includes a fast path for perfect sequences, and a heuristic fallback for mutated bases.
     """
     if not dna_seq:
         raise ValueError("Empty DNA sequence")
 
-    current_base = 'A'  # Bootstrap base
     payload_bytes = bytearray()
-
-    b3_buffer = []
+    current_base = 'A'
     
     i = 0
-    while i < len(dna_seq):
-        base = dna_seq[i]
-        
-        # If we see an invalid transition (homopolymer), it's a substitution error.
-        # We assign a dummy digit (e.g., 0) and continue to maintain the reading frame.
-        # Reed-Solomon will easily correct this corrupted byte later.
-        if base not in REV_BASE_MAP.get(current_base, {}):
-            digit = 0
-        else:
-            digit = REV_BASE_MAP[current_base][base]
+    seq_len = len(dna_seq)
+    
+    while i < seq_len:
+        chunk = dna_seq[i:i+6]
+        if len(chunk) < 6:
+            break
             
-        b3_buffer.append(digit)
-        current_base = base
-        i += 1
-
-        if len(b3_buffer) == 6:
-            b = base3_to_byte(b3_buffer)
-            # Mutations can cause the 6-digit base-3 value to exceed 255.
-            # We modulo 256 so it remains a valid byte. Reed-Solomon will correct the actual byte value.
-            payload_bytes.append(b % 256)
+        # Fast Path: Perfect un-mutated 6-base chunk
+        match = DECODE_TABLE.get((current_base, chunk))
+        if match is not None:
+            current_base, val = match
+            payload_bytes.append(val)
+            i += 6
+        else:
+            # Slow Path: Chunk has biological mutations. Fall back to heuristic alignment.
             b3_buffer = []
+            c_base = current_base
+            for _ in range(6):
+                if i >= seq_len: break
+                base = dna_seq[i]
+                if base not in REV_BASE_MAP.get(c_base, {}):
+                    digit = 0 # Assume substitution error, Reed-Solomon will fix it later
+                else:
+                    digit = REV_BASE_MAP[c_base][base]
+                b3_buffer.append(digit)
+                c_base = base
+                i += 1
+                
+            if len(b3_buffer) == 6:
+                payload_bytes.append(base3_to_byte(b3_buffer) % 256)
+            current_base = c_base
 
     # Parse the header
     if len(payload_bytes) < 1:
         raise ValueError("Invalid DNA payload")
 
     filename_len = payload_bytes[0]
-
     if len(payload_bytes) < 1 + filename_len + 4:
         raise ValueError("Invalid DNA payload (too short for header)")
 
     filename = payload_bytes[1:1+filename_len].decode('utf-8', errors='ignore')
 
     data_len_start = 1 + filename_len
-    data_len = struct.unpack(
-        '>I', payload_bytes[data_len_start:data_len_start+4])[0]
+    data_len = struct.unpack('>I', payload_bytes[data_len_start:data_len_start+4])[0]
 
     data_start = data_len_start + 4
     data = payload_bytes[data_start:data_start+data_len]
 
     return bytes(data), filename
+

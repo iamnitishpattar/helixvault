@@ -163,9 +163,30 @@ export default function ForgotPassword() {
                   </button>
                 </div>
               </div>
-              <button type="submit" className="btn btn-solid-black" style={{ width: '100%', padding: '1rem' }} disabled={loading}>
+              <button type="submit" className="btn btn-solid-black" style={{ width: '100%', padding: '1rem', marginBottom: '1rem' }} disabled={loading}>
                 {loading ? 'Resetting...' : 'Reset Password'}
               </button>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  style={{ flex: 1, justifyContent: 'center', background: 'rgba(0,0,0,0.05)', color: '#1a1a1a' }}
+                  onClick={handleSendOtp}
+                  disabled={loading}
+                >
+                  Resend OTP
+                </button>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  style={{ flex: 1, justifyContent: 'center', color: '#666', border: 'none' }}
+                  onClick={() => setStep(1)}
+                  disabled={loading}
+                >
+                  Back
+                </button>
+              </div>
             </form>
           )}
 

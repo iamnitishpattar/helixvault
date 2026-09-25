@@ -154,7 +154,7 @@ class DnaVectorEngine:
         Perform vector cosine similarity search over a list of encoded files.
         Returns ranked results with AI explanations and confidence scores.
         """
-        if not files or not query.trim() if hasattr(query, 'trim') else not str(query).strip():
+        if not files or not str(query).strip():
             return []
             
         query_str = str(query).strip()

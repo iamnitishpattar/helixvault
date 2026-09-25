@@ -39,12 +39,20 @@ export default function Login() {
 
       await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        withCredentials: true
+        withCredentials: true,
+        timeout: 15000 // 15 seconds timeout
       });
       await login();
       navigate('/');
-    } catch {
-      setError('Login failed');
+    } catch (error) {
+      console.error("Login Error:", error);
+      if (error.response) {
+        setError(error.response.data?.detail || 'Invalid email or password');
+      } else if (error.code === 'ECONNABORTED') {
+        setError('Request timed out. Is the backend running?');
+      } else {
+        setError('Network error. Cannot connect to server.');
+      }
     } finally {
       setLoading(false);
     }

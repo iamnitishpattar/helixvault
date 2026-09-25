@@ -30,4 +30,31 @@ export const downloadFile = (content, filename) => {
   URL.revokeObjectURL(url);
 };
 
+export const downloadFromServer = async (fileId, format, filename, apiBaseUrl, axiosInstance) => {
+  try {
+    const res = await axiosInstance.get(`${apiBaseUrl}/api/dna/download/${fileId}/${format}`, {
+      withCredentials: true,
+      responseType: 'blob'
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Server download failed", err);
+    alert("Failed to download file. Please try again.");
+  }
+};
 
+export function base64ToBlob(base64, mimeType) {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Uint8Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  return new Blob([byteNumbers], { type: mimeType });
+}

@@ -1,9 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Archive, Lock, Shield, Dna, MapPin, FileText } from 'lucide-react';
+import { Archive, Lock, Shield, Dna, MapPin, FileText, Download, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { logClientRequestFailure } from '../utils/errorMessages';
 import HealthStatusModal, { HealthBadge } from '../components/HealthStatusModal';
+import { useToast } from '../context/ToastContext';
+import SkeletonLoader from '../components/SkeletonLoader';
+
+const exportToCSV = (data) => {
+  if (!data || data.length === 0) return;
+  const headers = ['ID', 'Filename', 'Original Size (bytes)', 'DNA Length (bp)', 'Encrypted', 'Error Correction', 'Steganography', 'Created At'];
+  const csvRows = [headers.join(',')];
+  
+  data.forEach(item => {
+    const row = [
+      item.id,
+      `"${item.filename}"`,
+      item.original_size_bytes,
+      item.dna_length_bp,
+      item.is_encrypted,
+      item.has_error_correction,
+      item.has_steganography,
+      `"${item.created_at}"`
+    ];
+    csvRows.push(row.join(','));
+  });
+
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('hidden', '');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'vault_history.csv');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
 
 const downloadProtocol = (item) => {
   const rack = Math.floor((item.id * 7) % 50) + 1;
@@ -58,10 +91,51 @@ Authorized by: HelixVault Automated Systems
   URL.revokeObjectURL(url);
 };
 
+const downloadSequence = async (item, format, toast) => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/dna/download/${item.id}/${format}`, {
+      withCredentials: true,
+      responseType: 'blob'
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    const ext = format === 'fasta' ? 'fasta' : 'gb';
+    link.setAttribute('download', `${item.filename}.${ext}`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    logClientRequestFailure('Failed to download sequence', err);
+    toast.error('Download Failed', 'Failed to download sequence. Please try again.');
+  }
+};
+
 function Vault() {
+  const toast = useToast();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedHealthItem, setSelectedHealthItem] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to permanently delete this payload from the vault?")) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await axios.delete(`${API_BASE_URL}/api/dna/${id}`, { withCredentials: true });
+      setHistory(prev => prev.filter(item => item.id !== id));
+      toast.success('File Deleted', 'Payload successfully removed from the vault.');
+    } catch (err) {
+      logClientRequestFailure('Failed to delete payload', err);
+      toast.error('Delete Failed', 'Failed to delete payload. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -86,15 +160,30 @@ function Vault() {
 
 
   return (
-    <div style={{ padding: '2rem 3rem' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 className="text-gradient"><Archive style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> My DNA Vault</h2>
-        <p className="text-muted">A secure history of all your synthesized DNA payloads across our global data centers.</p>
+    <div className="container">
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2 className="text-gradient"><Archive style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> My DNA Vault</h2>
+          <p className="text-muted">A secure history of all your synthesized DNA payloads across our global data centers.</p>
+        </div>
+        <button 
+          className="btn btn-outline-gold" 
+          onClick={() => exportToCSV(history)}
+          disabled={loading || history.length === 0}
+          aria-label="Export vault history to CSV"
+        >
+          Export CSV
+        </button>
       </div>
 
       <div className="glass-panel">
         {loading ? (
-          <p className="text-muted text-center">Loading enterprise vault data...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
+            <SkeletonLoader height="30px" />
+            <SkeletonLoader height="30px" />
+            <SkeletonLoader height="30px" />
+            <SkeletonLoader height="30px" />
+          </div>
         ) : history.length === 0 ? (
           <div className="text-center" style={{ padding: '3rem' }}>
             <Archive size={48} color="var(--text-secondary)" style={{ opacity: 0.5, marginBottom: '1rem' }} />
@@ -149,14 +238,37 @@ function Vault() {
                       size="small"
                     />
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button 
                       type="button" 
                       className="btn" 
-                      style={{ padding: '0.5rem', background: 'var(--accent-gold)', color: '#000', fontSize: '0.8rem' }}
+                      style={{ padding: '0.4rem 0.6rem', background: 'var(--accent-gold)', color: '#000', fontSize: '0.75rem' }}
                       onClick={() => downloadProtocol(item)}
+                      title="Download Standard Operating Procedure"
+                      aria-label={`Download standard operating procedure for ${item.filename}`}
                     >
-                      <FileText size={14} style={{ marginRight: '4px' }}/> SOP
+                      <FileText size={14} /> SOP
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn" 
+                      style={{ padding: '0.4rem 0.6rem', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.2)' }}
+                      onClick={() => downloadSequence(item, 'genbank', toast)}
+                      title="Download GenBank format"
+                      aria-label={`Download GenBank sequence for ${item.filename}`}
+                    >
+                      <Download size={14} /> .GB
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-danger" 
+                      style={{ padding: '0.4rem 0.6rem', background: 'rgba(255, 59, 48, 0.1)', color: '#ff3b30', fontSize: '0.75rem', border: '1px solid rgba(255, 59, 48, 0.3)' }}
+                      onClick={() => handleDelete(item.id)}
+                      disabled={isDeleting}
+                      title="Delete Payload"
+                      aria-label={`Delete payload ${item.filename}`}
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>

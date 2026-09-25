@@ -5,6 +5,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { logClientRequestFailure } from '../utils/errorMessages';
 import { useCarrier } from '../context/CarrierContext';
+import { useToast } from '../context/ToastContext';
 
 const sequenceStyle = {
   background: 'rgba(0,0,0,0.3)', 
@@ -40,10 +41,13 @@ function BioDatabase() {
   const [loadingNcbi, setLoadingNcbi] = useState(false);
   const [selectedSequence, setSelectedSequence] = useState(null);
   const [previewSplicing, setPreviewSplicing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
   const [ncbiDropdownOpen, setNcbiDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const { selectCarrier } = useCarrier();
+  const toast = useToast();
 
   const handleSelectCarrier = () => {
     if (!selectedSequence) return;
@@ -52,16 +56,18 @@ function BioDatabase() {
     navigate('/encode', { state: { selectedCarrier: accessionId } });
   };
 
-  const searchNcbi = async () => {
+  const searchNcbi = async (pageToFetch = page) => {
     if (!ncbiQuery) return;
     setLoadingNcbi(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/bio/ncbi/search?query=${ncbiQuery}`);
+      const res = await axios.get(`${API_BASE_URL}/api/bio/ncbi/search?query=${ncbiQuery}&page=${pageToFetch}`);
       setNcbiResults(res.data.results);
+      setPagination(res.data.pagination);
+      setPage(pageToFetch);
       setSelectedSequence(null);
     } catch (err) {
       logClientRequestFailure('NCBI search failed', err);
-      alert(BIO_DATABASE_ERROR);
+      toast.error('Search Failed', BIO_DATABASE_ERROR);
     } finally {
       setLoadingNcbi(false);
     }
@@ -74,7 +80,7 @@ function BioDatabase() {
       setSelectedSequence(res.data);
     } catch (err) {
       logClientRequestFailure('NCBI sequence fetch failed', err);
-      alert(BIO_DATABASE_ERROR);
+      toast.error('Fetch Failed', BIO_DATABASE_ERROR);
     } finally {
       setLoadingNcbi(false);
     }
@@ -91,7 +97,7 @@ function BioDatabase() {
         </p>
       </div>
 
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div>
         {/* NCBI Section */}
         <div className="showcase-card" style={{ display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
@@ -108,8 +114,11 @@ function BioDatabase() {
                   className="input-minimal" 
                   placeholder="Search terms (e.g. pUC19, GFP)"
                   value={ncbiQuery}
-                  onChange={(e) => setNcbiQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchNcbi()}
+                  onChange={(e) => {
+                    setNcbiQuery(e.target.value);
+                    setPage(1); // Reset page on new query input
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && searchNcbi(1)}
                   onClick={() => setNcbiDropdownOpen(!ncbiDropdownOpen)}
                   onBlur={() => setTimeout(() => setNcbiDropdownOpen(false), 200)}
                   aria-label="Search NCBI Database"
@@ -128,6 +137,7 @@ function BioDatabase() {
                       onMouseDown={() => {
                         setNcbiQuery(option);
                         setNcbiDropdownOpen(false);
+                        setPage(1);
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -140,7 +150,7 @@ function BioDatabase() {
                 </div>
               )}
             </div>
-            <button type="button" aria-label="Search NCBI" className="btn btn-solid-black" onClick={searchNcbi} disabled={loadingNcbi} style={{ padding: '0 1rem' }}>
+            <button type="button" aria-label="Search NCBI" className="btn btn-solid-black" onClick={() => searchNcbi(1)} disabled={loadingNcbi} style={{ padding: '0 1rem' }}>
               <Search size={18} />
             </button>
           </div>
@@ -323,6 +333,31 @@ function BioDatabase() {
                 ))}
                 {ncbiResults.length === 0 && !loadingNcbi && (
                   <p className="text-muted" style={{ textAlign: 'center', marginTop: '2rem' }}>No results. Try a search query.</p>
+                )}
+                {pagination && pagination.total_pages > 1 && !loadingNcbi && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)' }}>
+                    <button 
+                      type="button" 
+                      className="btn" 
+                      onClick={() => searchNcbi(page - 1)} 
+                      disabled={page <= 1}
+                      style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.05)', color: page <= 1 ? '#666' : '#fff' }}
+                    >
+                      Previous
+                    </button>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      Page {page} of {pagination.total_pages} ({pagination.total_count} total hits)
+                    </span>
+                    <button 
+                      type="button" 
+                      className="btn" 
+                      onClick={() => searchNcbi(page + 1)} 
+                      disabled={page >= pagination.total_pages}
+                      style={{ padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.05)', color: page >= pagination.total_pages ? '#666' : '#fff' }}
+                    >
+                      Next
+                    </button>
+                  </div>
                 )}
               </div>
             )}

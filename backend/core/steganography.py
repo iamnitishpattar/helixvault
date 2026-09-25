@@ -117,12 +117,16 @@ def embed_in_host(dna_payload: str) -> str:
     except Exception as e:
         logger.warning(f"Failed to fetch host sequence from NCBI, falling back to random host: {e}", exc_info=True)
         # Fallback to generating a random host sequence if offline
-        host_seq = "".join(random.choices(
-            ['A', 'C', 'G', 'T'], k=len(dna_payload) * 3))
+        chunk_size = 1024
+        chunk = "".join(random.choices(['A', 'C', 'G', 'T'], k=chunk_size))
+        target_len = len(dna_payload) * 3
+        host_seq = (chunk * (target_len // chunk_size + 1))[:target_len]
 
     if not host_seq:
-        host_seq = "".join(random.choices(
-            ['A', 'C', 'G', 'T'], k=len(dna_payload) * 3))
+        chunk_size = 1024
+        chunk = "".join(random.choices(['A', 'C', 'G', 'T'], k=chunk_size))
+        target_len = len(dna_payload) * 3
+        host_seq = (chunk * (target_len // chunk_size + 1))[:target_len]
 
     # Steganography: Embed the payload in the middle of the host sequence
     start_marker, end_marker, _, _, _, _ = _get_stego_markers()

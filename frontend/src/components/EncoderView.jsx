@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { UploadCloud, Download, File as FileIcon, ArrowRight, RefreshCw, Cpu, Settings, Shield, Lock, FileText, Dna, Zap, AlertTriangle, Database, Activity, Check } from 'lucide-react';
 import { useCarrier } from '../context/CarrierContext';
 import axios from 'axios';
@@ -8,8 +8,9 @@ import autoTable from "jspdf-autotable";
 import VisualPipeline from './VisualPipeline';
 import DnaVialPlaceholder from './DnaVialPlaceholder';
 import { API_BASE_URL } from '../config';
-import { calculateSHA256, formatWeight, downloadFile } from '../utils/fileUtils';
+import { calculateSHA256, formatWeight, downloadFile, downloadFromServer } from '../utils/fileUtils';
 import { getSafeApiErrorMessage, getSafeServerMessage, logClientRequestFailure } from '../utils/errorMessages';
+import { uploadFile, fetchS3Config, getStrategyInfo, formatBytes } from '../utils/uploadManager';
 
 const handleKeyDown = (e, action) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -25,11 +26,15 @@ const SYNTHESIS_METHODS = {
 };
 
 // File validation constants (mirror backend)
-const MAX_SIZE_MB = 10;
+const MAX_SIZE_MB = 100;
 const ALLOWED_TYPES = [
-  'application/pdf','image/png','image/jpeg','image/gif','image/webp','text/plain',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword',
-  'video/mp4', 'video/webm', 'video/quicktime'
+  'application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'text/plain',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword',
+  // Video (cross-browser variants)
+  'video/mp4', 'video/x-mp4', 'video/webm', 'video/quicktime',
+  'video/x-msvideo', 'video/avi', 'video/x-matroska', 'video/ogg', 'video/x-flv', 'video/3gpp',
+  // Audio (cross-browser variants)
+  'audio/mpeg', 'audio/mp3', 'audio/x-mpeg', 'audio/x-mp3',
 ];
 
 const PROGRESS_STAGES = [
@@ -52,16 +57,31 @@ export default function EncoderView() {
   const [progressStage, setProgressStage] = useState(0);  // 0=idle, 1-5=stages
   const [result, setResult] = useState(null);
   const [originalFileHash, setOriginalFileHash] = useState(null);
+  // Upload manager state
+  const [uploadProgress, setUploadProgress] = useState(null); // { percent, stage, strategy, chunksDone, chunksTotal, speedMBs, etaSeconds }
+  const [strategyInfo, setStrategyInfo] = useState(null);     // { strategy, label, icon, description }
+  const [s3Config, setS3Config] = useState(null);             // fetched once on mount
   const fileInputRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   const stageIntervalRef = useRef(null);
 
   useEffect(() => {
+    // Fetch S3 config once on mount
+    fetchS3Config().then(setS3Config);
     return () => {
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       if (stageIntervalRef.current) clearInterval(stageIntervalRef.current);
     };
   }, []);
+
+  // Derive upload strategy whenever file or s3Config changes
+  useEffect(() => {
+    if (file && s3Config !== null) {
+      setStrategyInfo(getStrategyInfo(file.size, s3Config.s3_enabled));
+    } else if (!file) {
+      setStrategyInfo(null);
+    }
+  }, [file, s3Config]);
   // Advanced Options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [password, setPassword] = useState('');
@@ -73,6 +93,7 @@ export default function EncoderView() {
 
   const { selectedCarrier, clearCarrier } = useCarrier();
   const location = useLocation();
+  const navigate = useNavigate();
   const [carrierAccession, setCarrierAccession] = useState('');
 
   useEffect(() => {
@@ -90,7 +111,7 @@ export default function EncoderView() {
       return `File too large: ${(f.size / (1024 * 1024)).toFixed(1)} MB. Maximum is ${MAX_SIZE_MB} MB.`;
     }
     if (!ALLOWED_TYPES.includes(f.type)) {
-      return `Unsupported file type: "${f.type || 'unknown'}". Allowed: PDF, PNG, JPG, GIF, TXT, DOCX, MP4.`;
+      return `Unsupported file type: "${f.type || 'unknown'}". Allowed: PDF, PNG, JPG, GIF, TXT, DOCX, MP4, WEBM, MOV, AVI, MKV, MP3.`;
     }
     return null;
   }, []);
@@ -128,69 +149,68 @@ export default function EncoderView() {
     setLoading(true);
     setResult(null);
     setApiError(null);
-    setProgressStage(1);
-    
-    // Animate through stages while the backend processes
+    setUploadProgress({ percent: 0, stage: 'upload', strategy: strategyInfo?.strategy || 'direct', chunksDone: 0, chunksTotal: 0, speedMBs: 0, etaSeconds: null });
+
     let stageIdx = 1;
-    stageIntervalRef.current = setInterval(() => {
-      stageIdx = Math.min(stageIdx + 1, PROGRESS_STAGES.length);
-      setProgressStage(stageIdx);
-    }, 2200);
 
     try {
       const hash = await calculateSHA256(file);
       setOriginalFileHash(hash);
-      
-      const formData = new FormData();
-      formData.append('file', file);
-      if (password) formData.append('password', password);
-      formData.append('use_error_correction', useErrorCorrection);
-      formData.append('use_steganography', useSteganography);
-      if (useSteganography && carrierAccession) {
-        formData.append('steganography_carrier', carrierAccession);
-      }
-      formData.append('use_fountain', useFountain);
-      formData.append('fountain_overhead', fountainOverhead);
 
-      const res = await axios.post(`${API_BASE_URL}/api/dna/encode`, formData, { 
-        withCredentials: true 
+      const encodeOptions = { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead, carrierAccession };
+
+      const taskResult = await uploadFile(file, encodeOptions, (progress) => {
+        setUploadProgress(progress);
+        // Start encoding stage animation once the upload phase is done
+        if (progress.stage === 'encoding' && !stageIntervalRef.current) {
+          setProgressStage(1);
+          stageIntervalRef.current = setInterval(() => {
+            stageIdx = Math.min(stageIdx + 1, PROGRESS_STAGES.length);
+            setProgressStage(stageIdx);
+          }, 2200);
+        }
       });
-      
-      if (res.data.task_id) {
-        // Polling loop for Enterprise Async Tasks
+
+      if (taskResult.task_id) {
+        // Poll /api/dna/status/{task_id} — same as before
         pollingIntervalRef.current = setInterval(async () => {
           try {
-            const statusRes = await axios.get(`${API_BASE_URL}/api/dna/status/${res.data.task_id}`, {
-              withCredentials: true
-            });
+            const statusRes = await axios.get(`${API_BASE_URL}/api/dna/status/${taskResult.task_id}`, { withCredentials: true });
             if (statusRes.data.status === 'success') {
               clearInterval(pollingIntervalRef.current);
               clearInterval(stageIntervalRef.current);
+              stageIntervalRef.current = null;
               setProgressStage(0);
+              setUploadProgress(null);
               setResult(statusRes.data);
               setLoading(false);
             } else if (statusRes.data.status === 'failed') {
               clearInterval(pollingIntervalRef.current);
               clearInterval(stageIntervalRef.current);
+              stageIntervalRef.current = null;
               setProgressStage(0);
+              setUploadProgress(null);
               setApiError(getSafeServerMessage(statusRes.data.error, ENCODE_ERROR_MESSAGE));
               setLoading(false);
             }
           } catch (e) {
-             logClientRequestFailure('Encoder status polling failed; retrying', e);
+            logClientRequestFailure('Encoder status polling failed; retrying', e);
           }
         }, 1500);
       } else {
         clearInterval(stageIntervalRef.current);
+        stageIntervalRef.current = null;
         setProgressStage(0);
-        setResult(res.data);
+        setUploadProgress(null);
+        setResult(taskResult);
         setLoading(false);
       }
     } catch (err) {
       clearInterval(stageIntervalRef.current);
+      stageIntervalRef.current = null;
       setProgressStage(0);
+      setUploadProgress(null);
       setApiError(getSafeApiErrorMessage(err, ENCODE_ERROR_MESSAGE));
-    } finally {
       setLoading(false);
     }
   };
@@ -233,7 +253,7 @@ export default function EncoderView() {
     
     doc.setFontSize(10);
     doc.setFont('courier');
-    const snippet = result.dna_sequence.length > 500 ? result.dna_sequence.substring(0, 500) + '...' : result.dna_sequence;
+    const snippet = result.dna_sequence_preview.length > 500 ? result.dna_sequence_preview.substring(0, 500) + '...' : result.dna_sequence_preview;
     const splitSnippet = doc.splitTextToSize(snippet, 170);
     doc.text(splitSnippet, 20, tableEnd + 25);
     
@@ -269,19 +289,28 @@ export default function EncoderView() {
             style={{ display: 'none' }} 
             ref={fileInputRef} 
             onChange={handleFileSelect}
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.docx,.doc,.mp4,.webm,.mov,.avi,.mkv,.ogv,.flv,.3gp,.mp3,.wav,.ogg,.m4a"
             aria-label="File Upload Input"
           />
           {file ? (
             <div>
               <FileIcon size={48} color="var(--accent-cyan)" style={{ marginBottom: '1rem' }} />
               <h4 style={{ marginBottom: '0.5rem' }}>{file.name}</h4>
-              <p className="text-muted">{(file.size / 1024).toFixed(2)} KB</p>
+              <p className="text-muted">{formatBytes(file.size)}</p>
+              {/* Strategy badge */}
+              {strategyInfo && (
+                <div style={{ marginTop: '0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.25rem 0.8rem', background: 'rgba(0,204,255,0.08)', border: '1px solid rgba(0,204,255,0.25)', borderRadius: '999px', fontSize: '0.73rem', color: 'var(--accent-cyan)' }}>
+                  <span>{strategyInfo.icon}</span>
+                  <span style={{ fontWeight: 600 }}>{strategyInfo.label}</span>
+                  <span style={{ color: 'var(--text-secondary)', marginLeft: '2px' }}>· {strategyInfo.description}</span>
+                </div>
+              )}
             </div>
           ) : (
             <div>
               <UploadCloud size={48} color={isDragOver ? 'var(--accent-cyan)' : 'var(--text-secondary)'} style={{ marginBottom: '1rem' }} />
               <h4>{isDragOver ? 'Drop it!' : 'Click or drag file to upload'}</h4>
-              <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>PDF, PNG, JPG, TXT, DOCX, MP4 — max 10 MB</p>
+              <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>PDF, PNG, JPG, TXT, DOCX · MP4, WEBM, MOV, AVI, MKV · MP3 — max 100 MB</p>
             </div>
           )}
         </div>
@@ -480,7 +509,44 @@ export default function EncoderView() {
           )}
         </div>
 
-        {/* Multi-step progress indicator */}
+        {/* ── Upload Progress Bar (shown during upload / assembling phases) ── */}
+        {loading && uploadProgress && uploadProgress.stage !== 'encoding' && (
+          <div style={{ marginBottom: '1rem', padding: '1rem 1.25rem', background: 'rgba(0,204,255,0.05)', border: '1px solid rgba(0,204,255,0.15)', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ fontSize: '1.1rem' }}>{strategyInfo?.icon || '⚡'}</span>
+                <span style={{ color: 'var(--accent-cyan)', fontSize: '0.88rem', fontWeight: 600 }}>
+                  {uploadProgress.stage === 'assembling'
+                    ? '🔧 Assembling chunks on server…'
+                    : `${strategyInfo?.label || 'Uploading'}…`}
+                </span>
+              </div>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', fontWeight: 600 }}>
+                {uploadProgress.percent}%
+              </span>
+            </div>
+
+            {/* Smooth progress bar */}
+            <div style={{ height: '6px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.5rem' }}>
+              <div style={{ width: `${uploadProgress.percent}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-purple))', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+            </div>
+
+            {/* Chunk counter + speed + ETA */}
+            {uploadProgress.chunksTotal > 1 && (
+              <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                <span>📦 Chunk <strong style={{ color: 'var(--text-primary)' }}>{uploadProgress.chunksDone}</strong> / {uploadProgress.chunksTotal}</span>
+                {uploadProgress.speedMBs > 0 && (
+                  <span>⚡ <strong style={{ color: 'var(--accent-green)' }}>{uploadProgress.speedMBs} MB/s</strong></span>
+                )}
+                {uploadProgress.etaSeconds !== null && uploadProgress.etaSeconds > 0 && (
+                  <span>⏱ ETA <strong style={{ color: 'var(--accent-gold)' }}>{uploadProgress.etaSeconds < 60 ? `${uploadProgress.etaSeconds}s` : `${Math.round(uploadProgress.etaSeconds / 60)}m`}</strong></span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Encoding Stage Indicator (shown during DNA encoding phase) ── */}
         {loading && progressStage > 0 && (() => {
           const stage = PROGRESS_STAGES[progressStage - 1];
           const StageIcon = stage.icon;
@@ -508,7 +574,12 @@ export default function EncoderView() {
           disabled={!file || loading || !!fileError}
         >
           {loading ? <RefreshCw className="animate-spin" /> : <Cpu />}
-          {loading ? `${PROGRESS_STAGES[Math.max(0, progressStage - 1)]?.label || 'Processing...'}` : 'Encode to DNA'}
+          {loading
+            ? (uploadProgress && uploadProgress.stage !== 'encoding'
+                ? `${strategyInfo?.label || 'Uploading'}… ${uploadProgress.percent}%`
+                : `${PROGRESS_STAGES[Math.max(0, progressStage - 1)]?.label || 'Processing…'}`)
+            : 'Encode to DNA'
+          }
         </button>
       </div>
 
@@ -626,7 +697,8 @@ export default function EncoderView() {
             <div style={{ marginBottom: '1.5rem' }}>
               <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>DNA Sequence Preview</p>
               <div className="sequence-preview">
-                {result.dna_sequence}
+                {result.dna_sequence_preview}
+                {result.metrics.length > 2000 && <span style={{ color: 'var(--accent-gold)' }}>... (sequence truncated for display)</span>}
               </div>
             </div>
 
@@ -635,7 +707,7 @@ export default function EncoderView() {
                 type="button"
                 className="btn" 
                 style={{ flex: '1 1 45%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-                onClick={() => downloadFile(result.fasta, `${result.filename}.fasta`)}
+                onClick={() => downloadFromServer(result.id, 'fasta', `${result.filename}.fasta`, API_BASE_URL, axios)}
               >
                 <Download size={16} /> FASTA
               </button>
@@ -643,7 +715,7 @@ export default function EncoderView() {
                 type="button"
                 className="btn" 
                 style={{ flex: '1 1 45%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-                onClick={() => downloadFile(result.genbank, `${result.filename}.gb`)}
+                onClick={() => downloadFromServer(result.id, 'genbank', `${result.filename}.gb`, API_BASE_URL, axios)}
               >
                 <Download size={16} /> GenBank
               </button>
@@ -654,6 +726,14 @@ export default function EncoderView() {
                 onClick={generatePDFReport}
               >
                 <FileText size={16} /> Generate PDF Report
+              </button>
+              <button 
+                type="button"
+                className="btn btn-gold" 
+                style={{ flex: '1 1 100%', justifyContent: 'center', marginTop: '0.5rem', padding: '1rem' }}
+                onClick={() => navigate('/vault')}
+              >
+                <Database size={16} /> View in Vault
               </button>
             </div>
           </div>

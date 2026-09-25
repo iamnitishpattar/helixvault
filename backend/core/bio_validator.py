@@ -31,22 +31,19 @@ def check_gc_content(dna_seq: str) -> float:
     """Calculates GC percentage in the sequence."""
     if not dna_seq:
         return 0.0
-    gc_count = sum(1 for b in dna_seq.upper() if b in ('G', 'C'))
+    gc_count = dna_seq.count('G') + dna_seq.count('C') + dna_seq.count('g') + dna_seq.count('c')
     return round((gc_count / len(dna_seq)) * 100.0, 2)
 
 def find_longest_homopolymer(dna_seq: str) -> int:
     """Finds the length of the longest repeating nucleotide stretch (homopolymer)."""
     if not dna_seq:
         return 0
+    matches = re.finditer(r'(A{2,}|C{2,}|G{2,}|T{2,})', dna_seq, re.IGNORECASE)
     max_len = 1
-    curr_len = 1
-    for i in range(1, len(dna_seq)):
-        if dna_seq[i].upper() == dna_seq[i-1].upper() and dna_seq[i].upper() in 'ATCG':
-            curr_len += 1
-            if curr_len > max_len:
-                max_len = curr_len
-        else:
-            curr_len = 1
+    for m in matches:
+        length = len(m.group(0))
+        if length > max_len:
+            max_len = length
     return max_len
 
 def validate_sequence_biosecurity(dna_seq: str, strict_mode: bool = False) -> Dict[str, Any]:

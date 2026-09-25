@@ -17,6 +17,8 @@ from api.auth import router as auth_router
 from api.developer import router as dev_router
 from api.compute_api import router as compute_router
 from api.plasmid_api import router as plasmid_router
+from api.upload_api import router as upload_router
+from api.admin import router as admin_router
 from db.database import engine, Base
 from db import models  # noqa: F401
 
@@ -155,10 +157,12 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(dna_router, prefix="/api/dna", tags=["DNA Storage"])
+app.include_router(upload_router, prefix="/api/upload", tags=["Upload Manager"])
 app.include_router(bio_router, prefix="/api/bio", tags=["Bio Integration"])
 app.include_router(dev_router, prefix="/api/developer", tags=["Developer DaaS"])
 app.include_router(compute_router, prefix="/api/compute", tags=["Live Bio-Compute & AI Co-Pilot"])
 app.include_router(plasmid_router, prefix="/api/plasmid", tags=["Synthetic Biology Plasmid Workbench"])
+app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 
 
 @app.get("/")

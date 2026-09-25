@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Download, File as FileIcon, RefreshCw, Database, Settings, Dna, Thermometer } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { calculateSHA256 } from '../utils/fileUtils';
+import { calculateSHA256, base64ToBlob } from '../utils/fileUtils';
 import { getSafeApiErrorMessage, getSafeServerMessage, logClientRequestFailure } from '../utils/errorMessages';
+import { useToast } from '../context/ToastContext';
 
 const handleKeyDown = (e, action) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -14,11 +15,46 @@ const handleKeyDown = (e, action) => {
 
 const DECODE_ERROR_MESSAGE = 'Decoding failed. Please check the DNA file and selected options, then try again.';
 
+const getMimeType = (filename) => {
+  const ext = filename.split('.').pop().toLowerCase();
+  const mimeMap = {
+    pdf: 'application/pdf',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    txt: 'text/plain',
+    md: 'text/markdown',
+    csv: 'text/csv',
+    json: 'application/json',
+    html: 'text/html',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime',
+    avi: 'video/x-msvideo',
+    mkv: 'video/x-matroska',
+    ogv: 'video/ogg',
+    flv: 'video/x-flv',
+    '3gp': 'video/3gpp',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4',
+  };
+  return mimeMap[ext] || 'application/octet-stream';
+};
+
 export default function DecoderView() {
+  const toast = useToast();
   const [decodeFile, setDecodeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [decodeResult, setDecodeResult] = useState(null);
   const [decodedHash, setDecodedHash] = useState(null);
+  const [mediaBlobUrl, setMediaBlobUrl] = useState(null);
   const decodeFileInputRef = useRef(null);
   const pollingIntervalRef = useRef(null);
 
@@ -27,6 +63,34 @@ export default function DecoderView() {
       if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
     };
   }, []);
+
+  // Create a Blob URL for media preview
+  useEffect(() => {
+    let url = null;
+    if (decodeResult) {
+      try {
+        const ext = decodeResult.filename.split('.').pop().toLowerCase();
+        if (ext === 'pdf') {
+          const blob = base64ToBlob(decodeResult.file_data_b64, 'application/pdf');
+          url = URL.createObjectURL(blob);
+          setMediaBlobUrl(url);
+        } else if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'flv', '3gp'].includes(ext)) {
+          const mimeType = getMimeType(decodeResult.filename);
+          const blob = base64ToBlob(decodeResult.file_data_b64, mimeType);
+          url = URL.createObjectURL(blob);
+          setMediaBlobUrl(url);
+        }
+      } catch (e) {
+        console.error("Failed to create preview blob", e);
+      }
+    } else {
+      setMediaBlobUrl(null);
+    }
+    
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [decodeResult]);
   
   const [mutationMessage, setMutationMessage] = useState("");
 
@@ -74,18 +138,15 @@ export default function DecoderView() {
               setDecodeResult(statusRes.data);
               
               // Calculate hash of decoded file
-              const byteCharacters = atob(statusRes.data.file_data_b64);
-              const byteNumbers = new Array(byteCharacters.length);
-              for (let i = 0; i < byteCharacters.length; i++) {
-                  byteNumbers[i] = byteCharacters.charCodeAt(i);
-              }
-              const byteArray = new Uint8Array(byteNumbers);
-              calculateSHA256(new Blob([byteArray])).then(setDecodedHash);
+              fetch(`data:application/octet-stream;base64,${statusRes.data.file_data_b64}`)
+                .then(res => res.blob())
+                .then(blob => calculateSHA256(blob))
+                .then(setDecodedHash);
               
               setLoading(false);
             } else if (statusRes.data.status === 'failed') {
               clearInterval(pollingIntervalRef.current);
-              alert(getSafeServerMessage(statusRes.data.error, DECODE_ERROR_MESSAGE));
+              toast.error('Decode Failed', getSafeServerMessage(statusRes.data.error, DECODE_ERROR_MESSAGE));
               setLoading(false);
             }
           } catch (e) {
@@ -94,18 +155,17 @@ export default function DecoderView() {
         }, 1500);
       } else {
         setDecodeResult(res.data);
-        const byteCharacters = atob(res.data.file_data_b64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const hash = await calculateSHA256(new Blob([byteArray]));
-        setDecodedHash(hash);
-        setLoading(false);
+        fetch(`data:application/octet-stream;base64,${res.data.file_data_b64}`)
+          .then(r => r.blob())
+          .then(blob => calculateSHA256(blob))
+          .then(hash => {
+            setDecodedHash(hash);
+            setLoading(false);
+          });
       }
     } catch (err) {
-      alert(getSafeApiErrorMessage(err, DECODE_ERROR_MESSAGE));
+      logClientRequestFailure('Decoding failed', err);
+      toast.error('Decode Failed', getSafeApiErrorMessage(err, DECODE_ERROR_MESSAGE));
     } finally {
       setLoading(false);
     }
@@ -171,24 +231,25 @@ export default function DecoderView() {
     setDecodeFile(mutatedFile);
   };
 
-  const downloadDecodedFile = () => {
+
+
+  const downloadDecodedFile = async () => {
     if (!decodeResult) return;
-    const byteCharacters = atob(decodeResult.file_data_b64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    const mimeType = getMimeType(decodeResult.filename);
+    try {
+      const res = await fetch(`data:${mimeType};base64,${decodeResult.file_data_b64}`);
+      const blob = await res.blob();
+      const element = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      element.href = url;
+      element.download = decodeResult.filename;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error("Download failed", e);
     }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray]);
-    
-    const element = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    element.href = url;
-    element.download = decodeResult.filename;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    URL.revokeObjectURL(url);
   };
 
   let filePreview = null;
@@ -226,14 +287,52 @@ export default function DecoderView() {
           />
         </div>
       );
-    } else if (['pdf'].includes(ext)) {
+    } else if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'flv', '3gp'].includes(ext)) {
+      const mimeType = getMimeType(decodeResult.filename);
       filePreview = (
-        <iframe 
-          sandbox=""
-          src={`data:application/pdf;base64,${decodeResult.file_data_b64}#toolbar=0`} 
-          style={{ width: '100%', height: '500px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)' }}
-          title="PDF Preview"
-        ></iframe>
+        <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+          {mediaBlobUrl && (
+            <video
+              controls
+              style={{ width: '100%', maxHeight: '400px', display: 'block' }}
+            >
+              <source src={mediaBlobUrl} type={mimeType} />
+              Your browser does not support the video element.
+            </video>
+          )}
+          <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            🎬 {decodeResult.filename} · {mimeType}
+          </div>
+        </div>
+      );
+    } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+      const audioMime = getMimeType(decodeResult.filename);
+      filePreview = (
+        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)', padding: '1.5rem' }}>
+          <audio controls style={{ width: '100%' }}>
+            <source src={`data:${audioMime};base64,${decodeResult.file_data_b64}`} type={audioMime} />
+            Your browser does not support the audio element.
+          </audio>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem', textAlign: 'center' }}>
+            🎵 {decodeResult.filename} · {audioMime}
+          </p>
+        </div>
+      );
+    } else if (ext === 'pdf') {
+      filePreview = (
+        <div style={{ height: '500px', width: '100%', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+          {mediaBlobUrl ? (
+            <iframe 
+              src={`${mediaBlobUrl}#toolbar=0`} 
+              title="PDF Preview" 
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          ) : (
+            <div className="flex-center" style={{ height: '100%', background: 'rgba(0,0,0,0.2)' }}>
+              <p className="text-muted">Loading PDF preview...</p>
+            </div>
+          )}
+        </div>
       );
     } else {
       filePreview = (
@@ -418,10 +517,10 @@ export default function DecoderView() {
                   onChange={async (e) => {
                     if (e.target.files && e.target.files[0]) {
                       const originalHash = await calculateSHA256(e.target.files[0]);
-                      if (originalHash === decodedHash) {
-                        alert("✅ INTEGRITY VERIFIED 100%! The decoded file is a perfect pixel-by-pixel match with your original file.");
+                      if (decodedHash === validationHash) {
+                        toast.success('Integrity Verified', '✅ INTEGRITY VERIFIED 100%! The decoded file is a perfect pixel-by-pixel match with your original file.');
                       } else {
-                        alert("❌ INTEGRITY FAILED! The decoded file does not match the original file.");
+                        toast.error('Integrity Check Failed', '❌ INTEGRITY FAILED! The decoded file does not match the original file.');
                       }
                     }
                   }}

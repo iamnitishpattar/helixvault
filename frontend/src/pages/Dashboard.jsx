@@ -5,9 +5,11 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import SpotlightCard from '../components/SpotlightCard';
 import { useAuth } from '../context/AuthContext';
-import { getSafeApiErrorMessage, logClientRequestFailure } from '../utils/errorMessages';
+import { logClientRequestFailure, getSafeApiErrorMessage } from '../utils/errorMessages';
+import { useToast } from '../context/ToastContext';
 import LongevityCalculator from '../components/LongevityCalculator';
 import PhysicalStorageSimulator from '../components/PhysicalStorageSimulator';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const ChartWrapper = lazy(() => import('../components/ChartWrapper'));
 const API_KEY_ERROR = 'Unable to update API keys right now. Please try again later.';
@@ -17,6 +19,7 @@ function Dashboard() {
   const [chartData, setChartData] = useState([]);
   const [userStats, setUserStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const toast = useToast();
   
   // Developer API State
   const [apiKeys, setApiKeys] = useState([]);
@@ -98,7 +101,7 @@ function Dashboard() {
       setApiKeys([...apiKeys, { id: res.data.id, name: res.data.name, created_at: new Date().toISOString(), is_active: true }]);
     } catch (err) {
       logClientRequestFailure('API key generation failed', err);
-      alert(getSafeApiErrorMessage(err, API_KEY_ERROR));
+      toast.error('Key Generation Failed', getSafeApiErrorMessage(err, API_KEY_ERROR));
     } finally {
       setIsGenerating(false);
       isGeneratingRef.current = false;
@@ -116,7 +119,7 @@ function Dashboard() {
       setApiKeys(apiKeys.filter(k => k.id !== id));
     } catch (err) {
       logClientRequestFailure('API key revocation failed', err);
-      alert(getSafeApiErrorMessage(err, API_KEY_ERROR));
+      toast.error('Revocation Failed', getSafeApiErrorMessage(err, API_KEY_ERROR));
     } finally {
       setIsRevoking(false);
       isRevokingRef.current = false;
@@ -144,7 +147,7 @@ function Dashboard() {
             <Database size={18} /> VAULT
           </Link>
         </div>
-        <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.1em', color: '#666' }}>BASE-3 ENCODING IS LIVE</p>
+        <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>BASE-3 ENCODING IS LIVE</p>
       </div>
 
       {/* Showcase Grid */}
@@ -170,7 +173,9 @@ function Dashboard() {
             <h3>Your Vault Stats</h3>
           {statsLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
-              {[1,2,3].map(i => <div key={i} style={{ height: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />)}
+              <SkeletonLoader height="20px" />
+              <SkeletonLoader height="20px" />
+              <SkeletonLoader height="20px" />
             </div>
           ) : !userStats || userStats.total_files === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem 0' }}>
@@ -225,7 +230,8 @@ function Dashboard() {
 
           {keysLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ height: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />
+              <SkeletonLoader height="40px" />
+              <SkeletonLoader height="40px" />
             </div>
           ) : apiKeys.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem 0' }}>
@@ -261,17 +267,24 @@ function Dashboard() {
         )}
       </div>
 
-      {chartData.length > 0 && (
+      {user && (
         <div className="container" style={{ marginTop: '4rem' }}>
           <SpotlightCard className="showcase-card" spotlightColor="rgba(255, 255, 255, 0.05)">
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <BarChart2 size={16} /> GC Content Analytics
             </h3>
-            <div style={{ width: '100%', height: 300, marginTop: '2rem' }}>
-              <Suspense fallback={<div className="flex-center" style={{ height: '100%', color: 'var(--text-secondary)' }}>Loading chart...</div>}>
-                <ChartWrapper data={chartData} />
-              </Suspense>
-            </div>
+            {chartData.length > 0 ? (
+              <div style={{ width: '100%', height: 300, marginTop: '2rem' }}>
+                <Suspense fallback={<div className="flex-center" style={{ height: '100%', color: 'var(--text-secondary)' }}>Loading chart...</div>}>
+                  <ChartWrapper data={chartData} />
+                </Suspense>
+              </div>
+            ) : (
+              <div className="flex-center" style={{ width: '100%', height: 150, marginTop: '2rem', flexDirection: 'column', gap: '1rem', color: 'var(--text-secondary)' }}>
+                <BarChart2 size={32} style={{ opacity: 0.3 }} />
+                <p style={{ fontSize: '0.9rem' }}>No sequences available for analytics.</p>
+              </div>
+            )}
           </SpotlightCard>
         </div>
       )}

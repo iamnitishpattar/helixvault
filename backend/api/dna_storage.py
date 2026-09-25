@@ -10,14 +10,27 @@ from core.rate_limiter import limiter
 from core.rate_limit_config import rate_limit_settings
 
 # ── File validation constants ────────────────────────────────────────────────
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024  # 100 MB (raised for video support)
 ALLOWED_MIME_TYPES = {
     "application/pdf",
     "image/png", "image/jpeg", "image/gif", "image/webp",
     "text/plain",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
     "application/msword",  # .doc
-    "video/mp4", "video/webm", "video/quicktime",
+    # ── Video (cross-browser variants) ──────────────────────────────────────
+    "video/mp4", "video/x-mp4",             # .mp4
+    "video/webm",                            # .webm
+    "video/quicktime",                       # .mov
+    "video/x-msvideo", "video/avi",          # .avi
+    "video/x-matroska",                      # .mkv
+    "video/ogg",                             # .ogv
+    "video/x-flv",                           # .flv
+    "video/3gpp",                            # .3gp
+    # ── Audio (cross-browser variants) ──────────────────────────────────────
+    "audio/mpeg",   # .mp3 (standard)
+    "audio/mp3",    # .mp3 (Chrome on Windows)
+    "audio/x-mpeg", # .mp3 (older browsers)
+    "audio/x-mp3",  # .mp3 (legacy)
 }
 TASK_TTL_SECONDS = 600  # tasks expire after 10 minutes
 
@@ -70,10 +83,16 @@ def _validate_upload(contents: bytes, content_type: Optional[str], filename: str
                    f"Received {len(contents) / (1024*1024):.1f} MB."
         )
     if content_type and content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Unsupported file type '{content_type}'. Allowed: PDF, PNG, JPG, GIF, WEBP, TXT, DOCX, MP4."
-        )
+        # Fallback: accept by file extension for media files whose MIME type
+        # varies across browsers (e.g. audio/mp3 vs audio/mpeg, video/avi variants)
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        AUDIO_EXTS = {'mp3', 'wav', 'ogg', 'm4a'}
+        VIDEO_EXTS = {'mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv', 'flv', '3gp'}
+        if ext not in AUDIO_EXTS and ext not in VIDEO_EXTS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Unsupported file type '{content_type}'. Allowed: PDF, PNG, JPG, GIF, WEBP, TXT, DOCX, MP4, WEBM, MOV, AVI, MKV, MP3."
+            )
     if not filename or len(filename) > 255:
         raise HTTPException(
             status_code=422,
@@ -138,11 +157,9 @@ def process_encode(task_id: str, contents: bytes, filename: str, password: Optio
         task_store[task_id] = {
             "status": "success",
             "filename": filename,
-            "dna_sequence": dna_seq,
+            "dna_sequence_preview": dna_seq[:2000],
             "metrics": metrics,
             "biosecurity_report": biosecurity_report,
-            "fasta": fasta_str,
-            "genbank": genbank_str,
             "id": file_id
         }
         
@@ -241,6 +258,41 @@ def get_task_status(
         raise HTTPException(status_code=404, detail="Task not found")
     return task_store[task_id]
 
+from fastapi.responses import StreamingResponse
+
+@router.get("/download/{file_id}/{format}")
+@limiter.limit(rate_limit_settings.RATE_LIMIT_AUTH)
+def download_dna_file(
+    request: Request,
+    file_id: int, 
+    format: str, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    file = db.query(EncodedFile).filter(EncodedFile.id == file_id, EncodedFile.user_id == current_user.id).first()
+    if not file or not file.dna_sequence:
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    seq = file.dna_sequence
+    seq_id = f"HV_{file.filename.replace('.', '_')}"
+    
+    if format == "fasta":
+        content = generate_fasta(seq, seq_id)
+        filename = f"{file.filename}.fasta"
+        media_type = "text/plain"
+    elif format == "genbank":
+        content = generate_genbank(seq, seq_id)
+        filename = f"{file.filename}.gb"
+        media_type = "text/plain"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid format")
+        
+    return StreamingResponse(
+        iter([content]), 
+        media_type=media_type, 
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @router.get("/history")
 def get_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     files = db.query(EncodedFile).filter(EncodedFile.user_id == current_user.id).order_by(EncodedFile.created_at.desc()).all()
@@ -281,3 +333,21 @@ def get_user_stats(db: Session = Depends(get_db), current_user: User = Depends(g
         "files_with_stego": stego_count,
         "total_synthesis_cost_usd": synthesis_cost,
     }
+
+@router.delete("/{file_id}")
+@limiter.limit(rate_limit_settings.RATE_LIMIT_AUTH)
+def delete_dna_file(
+    request: Request,
+    file_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    file = db.query(EncodedFile).filter(EncodedFile.id == file_id, EncodedFile.user_id == current_user.id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    db.delete(file)
+    db.commit()
+    
+    return {"status": "success", "message": "File successfully deleted from vault"}
+

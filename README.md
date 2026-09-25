@@ -162,7 +162,13 @@ graph TD
 
 ---
 
-## 🆕 Recent Updates (v3.0)
+## 🆕 Recent Updates (v4.0)
+
+*   **Improved Login Error Handling:** Replaced the silent catch-all login error with detailed, user-facing error messages. The login form now shows specific feedback — `"Invalid email or password"`, `"Request timed out. Is the backend running?"`, or `"Network error. Cannot connect to server."` — so users know exactly what went wrong instead of being stuck on `Authenticating...` forever. A 15-second request timeout was also added to prevent indefinite hangs.
+*   **Fixed `.gitignore` for Virtual Environment:** The `backend/.venv/` directory was not covered by `.gitignore` (only `venv/` was listed), causing 6,000+ library files to appear as untracked changes in Git. Added `.venv/` to the root `.gitignore` to correctly exclude it.
+*   **Quick-Start Batch Script (`start_project.bat`):** Added a one-click Windows batch script at the project root that automatically opens two terminals and starts both the FastAPI backend (`uvicorn`) and the React frontend (`npm run dev`) simultaneously.
+
+## 🆕 Previous Updates (v3.0)
 
 *   **Interactive Steganography Carrier Integration:** Built persistent React state management (`CarrierContext`) linking the Biological Database directly to the DNA Encoder. Selecting an NCBI carrier vector automatically expands advanced security options and pre-fills the host carrier sequence accession ID.
 *   **Systematic Plasmid Workbench Architecture:** Re-engineered the Synthetic Biology Plasmid Workbench into an ultra-clean, industry-grade 2-column dashboard featuring a unified Cloning Pipeline deck, 3-tier construct workspace, circular SVG hover tooltips, and space-justified specification ledgers.
@@ -178,7 +184,16 @@ graph TD
 
 ## 💻 Running Locally
 
-### Option A: Using Docker (Recommended)
+### Option A: One-Click Start (Windows — Easiest)
+Double-click the `start_project.bat` file in the project root, or run:
+```bat
+.\start_project.bat
+```
+This automatically opens two terminal windows and starts both servers.
+*   **Frontend:** `http://localhost:5173`
+*   **Backend API:** `http://localhost:8000`
+
+### Option B: Using Docker
 You can launch the entire stack (Frontend, Backend, Database) with a single command:
 ```bash
 docker compose up --build -d
@@ -187,7 +202,7 @@ docker compose up --build -d
 *   **Backend API:** `http://localhost:8000`
 *   **Database:** PostgreSQL on `localhost:5432`
 
-### Option B: Manual Setup (No Docker)
+### Option C: Manual Setup (No Docker)
 
 #### 1. Start the Backend
 ```bash
@@ -204,6 +219,8 @@ cd frontend
 npm install
 npm run dev
 ```
+
+> **Note:** The backend must be running before you try to log in. If you see `"Request timed out"` on the login page, it means the backend is not started.
 
 ---
 

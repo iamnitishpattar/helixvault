@@ -1,9 +1,14 @@
 import io
 
 def is_multimedia(filename: str) -> bool:
-    """Checks if the file is an image or video."""
+    """Checks if the file is an image, video, or audio."""
     ext = filename.split('.')[-1].lower()
-    return ext in ['png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'webm']
+    return ext in [
+        'png', 'jpg', 'jpeg', 'gif', 'webp',          # images
+        'mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv',    # video
+        'flv', '3gp',                                  # video (legacy)
+        'mp3', 'wav', 'ogg', 'm4a',                    # audio
+    ]
 
 def apply_media_compression(data: bytes, filename: str) -> bytes:
     """

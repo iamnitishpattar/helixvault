@@ -14,75 +14,81 @@ def calculate_metrics(dna_seq: str) -> dict:
             "storage_density_pb_per_gram": 215.0
         }
 
-    seq_obj = Seq(dna_seq)
-    gc = gc_fraction(seq_obj) * 100
-    try:
-        mt = MeltingTemp.Tm_Wallace(seq_obj)
-    except Exception:
-        mt = 0.0
+    seq_len = len(dna_seq)
+    
+    # Fast GC count
+    gc_count = dna_seq.count('G') + dna_seq.count('C') + dna_seq.count('g') + dna_seq.count('c')
+    gc = (gc_count / seq_len) * 100 if seq_len > 0 else 0.0
+    
+    mt = 0.0
+    if seq_len < 100000: # Only calc melting temp for small sequences
+        try:
+            seq_obj = Seq(dna_seq)
+            mt = MeltingTemp.Tm_Wallace(seq_obj)
+        except Exception:
+            pass
 
-    # Shannon entropy: measures information density of the DNA sequence
-    # A perfectly random sequence → entropy = 2.0 bits/symbol (log2 of 4 bases)
-    from collections import Counter
     import math
-    counts = Counter(dna_seq)
-    total = len(dna_seq)
-    entropy = -sum((c / total) * math.log2(c / total) for c in counts.values() if c > 0)
+    
+    # Fast entropy using string counts
+    entropy = 0.0
+    for base in ['A', 'C', 'G', 'T', 'a', 'c', 'g', 't']:
+        c = dna_seq.count(base)
+        if c > 0:
+            p = c / seq_len
+            entropy -= p * math.log2(p)
 
-    # Homopolymer count: number of consecutive identical bases (proof our algorithm works → should be 0)
-    homopolymer_count = sum(1 for i in range(len(dna_seq) - 1) if dna_seq[i] == dna_seq[i + 1])
+    # Fast homopolymer checking using regex
+    import re
+    homopolymer_count = sum(len(m.group(0)) - 1 for m in re.finditer(r'(A{2,}|C{2,}|G{2,}|T{2,})', dna_seq, re.IGNORECASE))
 
-    # Synthesis cost: $0.10 per base pair (industry standard Chemical synthesis rate)
-    synthesis_cost_usd = round(total * 0.10, 2)
-
-    # Physical weight: 330 Da per nucleotide, converted to picograms
-    # 1 Da = 1.6605e-24 g = 1.6605e-12 pg
-    physical_weight_pg = round(total * 330 * 1.6605e-12, 6)
-
-    # DNA storage density: theoretical 215 petabytes per gram of DNA (Church et al., Nature 2012)
-    storage_density_pb_per_gram = 215.0
+    synthesis_cost_usd = round(seq_len * 0.10, 2)
+    physical_weight_pg = round(seq_len * 330 * 1.6605e-12, 6)
 
     return {
         "gc_content": round(gc, 2),
-        "length": len(dna_seq),
+        "length": seq_len,
         "melting_temp": round(mt, 2),
         "shannon_entropy": round(entropy, 4),
         "homopolymer_count": homopolymer_count,
         "synthesis_cost_usd": synthesis_cost_usd,
         "physical_weight_pg": physical_weight_pg,
-        "storage_density_pb_per_gram": storage_density_pb_per_gram,
+        "storage_density_pb_per_gram": 215.0,
     }
 
 
 def generate_fasta(dna_seq: str, sequence_id: str = "HelixVault_Seq", description: str = "Synthetic DNA Data") -> str:
-    record = SeqRecord(
-        Seq(dna_seq),
-        id=sequence_id,
-        description=description
-    )
-    handle = io.StringIO()
-    SeqIO.write(record, handle, "fasta")
-    return handle.getvalue()
+    # High performance FASTA generator (wraps at 80 chars)
+    lines = [f">{sequence_id} {description}"]
+    lines.extend(dna_seq[i:i+80] for i in range(0, len(dna_seq), 80))
+    return "\n".join(lines) + "\n"
 
 
 import re
 
 def generate_genbank(dna_seq: str, sequence_id: str = "HV_001", description: str = "Synthetic DNA Data") -> str:
-    # GenBank format has specific requirements for the ID and name
-    clean_id = re.sub(r'[^a-zA-Z0-9_]', '', sequence_id)[:16]
-    if not clean_id:
-        clean_id = "HV_001"
+    clean_id = re.sub(r'[^a-zA-Z0-9_]', '', sequence_id)[:16] or "HV_001"
+    
+    # High performance custom GenBank generator to bypass Biopython's slow formatter
+    lines = [
+        f"LOCUS       {clean_id.ljust(16)} {len(dna_seq)} bp    DNA     linear   UNK 01-JAN-2026",
+        f"DEFINITION  {description}",
+        "FEATURES             Location/Qualifiers",
+        f"     source          1..{len(dna_seq)}",
+        '                     /organism="synthetic DNA construct"',
+        '                     /mol_type="other DNA"',
+        "ORIGIN      "
+    ]
+    
+    dna_seq = dna_seq.lower()
+    for i in range(0, len(dna_seq), 60):
+        chunk = dna_seq[i:i+60]
+        blocks = [chunk[j:j+10] for j in range(0, len(chunk), 10)]
+        line = f"{i+1:9} " + " ".join(blocks)
+        lines.append(line)
         
-    record = SeqRecord(
-        Seq(dna_seq),
-        id=clean_id,  # GenBank locus names have max length and strict character limits
-        name=clean_id,
-        description=description,
-        annotations={"molecule_type": "DNA"}
-    )
-    handle = io.StringIO()
-    SeqIO.write(record, handle, "genbank")
-    return handle.getvalue()
+    lines.append("//")
+    return "\n".join(lines) + "\n"
 
 
 def extract_sequence_from_file(file_content: bytes, filename: str) -> str:

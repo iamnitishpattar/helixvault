@@ -194,15 +194,26 @@ export default function Register() {
                 {loading ? 'Verifying...' : 'Verify OTP'}
               </button>
               
-              <button 
-                type="button" 
-                className="btn" 
-                style={{ width: '100%', justifyContent: 'center', color: '#666', border: 'none' }}
-                onClick={() => setStep(1)}
-                disabled={loading}
-              >
-                Back to Registration
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  style={{ flex: 1, justifyContent: 'center', background: 'rgba(0,0,0,0.05)', color: '#1a1a1a' }}
+                  onClick={handleRegister}
+                  disabled={loading}
+                >
+                  Resend OTP
+                </button>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  style={{ flex: 1, justifyContent: 'center', color: '#666', border: 'none' }}
+                  onClick={() => setStep(1)}
+                  disabled={loading}
+                >
+                  Back
+                </button>
+              </div>
             </form>
           )}
 

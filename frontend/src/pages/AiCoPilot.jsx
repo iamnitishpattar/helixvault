@@ -48,7 +48,7 @@ export default function AiCoPilot() {
         question: questionText
       }, {
         withCredentials: true,
-        timeout: 15000
+        timeout: 30000
       });
       
       const aiData = res.data.data;
@@ -62,11 +62,16 @@ export default function AiCoPilot() {
         }
       ]);
     } catch (err) {
+      // Surface actual backend error detail for LLM/compute errors
+      const detail = err?.response?.data?.detail;
+      const errorMsg = (detail && typeof detail === 'string' && !detail.includes('\\'))
+        ? detail
+        : 'Failed to communicate with AI Co-Pilot service.';
       setMessages(prev => [
         ...prev,
         {
           sender: 'ai',
-          text: `### ⚠️ Computation Error\n\n${getSafeApiErrorMessage(err, 'Failed to communicate with AI Co-Pilot service.')}`,
+          text: `### ⚠️ Computation Error\n\n${errorMsg}`,
           isError: true
         }
       ]);
@@ -153,9 +158,19 @@ export default function AiCoPilot() {
   };
 
   return (
-    <div className="container" style={{ padding: '3rem 1.5rem', maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)', minHeight: '750px' }}>
+    <div style={{
+      height: 'calc(100dvh - 65px)',
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '1.5rem clamp(1rem, 3vw, 3rem) 1rem',
+      maxWidth: '1100px',
+      width: '100%',
+      margin: '0 auto',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+    }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', flexShrink: 0 }}>
         <div className="flex-center" style={{ gap: '0.75rem', marginBottom: '0.75rem' }}>
           <div style={{ background: 'var(--gradient-gold)', padding: '0.5rem', borderRadius: '12px', display: 'flex' }}>
             <Bot size={26} color="#000" />
@@ -164,15 +179,27 @@ export default function AiCoPilot() {
             Autonomous RAG Intelligence
           </span>
         </div>
-        <h1 style={{ fontSize: '2.4rem', fontWeight: '800', marginBottom: '0.5rem', background: 'linear-gradient(135deg, #fff 0%, #a5a5a5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h1 style={{ fontSize: '2.4rem', fontWeight: '800', marginBottom: '0.5rem', background: 'linear-gradient(135deg, #ffffff 0%, #e0e0e0 60%, #c8c8c8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           DNA-RAG AI Co-Pilot
         </h1>
       </div>
 
-      {/* Main Chat Box */}
-      <SpotlightCard className="glass-panel" style={{ flex: '1', display: 'flex', flexDirection: 'column', borderRadius: '24px', border: '1px solid rgba(255,215,0,0.15)', overflow: 'hidden', background: 'rgba(10,10,10,0.7)' }}>
+      {/* Main Chat Box — plain div so flex styles are actually applied */}
+      <div
+        className="glass-panel card-spotlight"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: '24px',
+          border: '1px solid rgba(255,215,0,0.15)',
+          overflow: 'hidden',
+          background: 'rgba(10,10,10,0.7)',
+          minHeight: 0,       /* ← critical: lets flex child shrink below content size */
+        }}
+      >
         {/* Messages Scroll Area */}
-        <div style={{ flex: '1', overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -295,7 +322,7 @@ export default function AiCoPilot() {
             <Send size={18} /> SEND
           </button>
         </form>
-      </SpotlightCard>
+      </div>
     </div>
   );
 }
