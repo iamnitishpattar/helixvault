@@ -37,12 +37,14 @@ export default function Login() {
       formData.append('username', email);
       formData.append('password', password);
 
-      await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         withCredentials: true,
         timeout: 15000 // 15 seconds timeout
       });
-      await login();
+      const token = res.data?.access_token;
+      const userData = res.data?.user || { email: res.data?.email || email };
+      await login(token, userData);
       navigate('/');
     } catch (error) {
       console.error("Login Error:", error);

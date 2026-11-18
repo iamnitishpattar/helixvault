@@ -51,8 +51,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not token:
         raise credentials_exception
     token = token.strip('"').strip("'")
-    if token.startswith("Bearer "):
-        token = token[7:]
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
@@ -73,8 +73,8 @@ def get_optional_current_user(request: Request, db: Session = Depends(get_db)):
         if not token:
             return None
         token = token.strip('"').strip("'")
-        if token.startswith("Bearer "):
-            token = token[7:]
+        if token.lower().startswith("bearer "):
+            token = token[7:].strip()
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
@@ -172,22 +172,39 @@ def login(request: Request, response: Response, form_data: OAuth2PasswordRequest
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     
-    response.set_cookie(
-        key="access_token",
-        value=f"Bearer {access_token}",
-        httponly=True,
-        samesite="lax",
-        secure=os.getenv("ENVIRONMENT", "").lower() == "production",  # Only secure in HTTPS production
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
+    try:
+        response.set_cookie(
+            key="access_token",
+            value=f"Bearer {access_token}",
+            httponly=True,
+            samesite="none",
+            secure=True,
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
+    except Exception:
+        pass
     
     reset_auth_rate_limit(db, ip, form_data.username, "/login")
     
-    return {"status": "success", "email": user.email}
+    return {
+        "status": "success",
+        "email": user.email,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "is_active": user.is_active,
+            "is_admin": getattr(user, "is_admin", False),
+        }
+    }
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie(key="access_token", httponly=True, samesite="lax")
+    try:
+        response.delete_cookie(key="access_token", httponly=True, samesite="none", secure=True)
+    except Exception:
+        pass
     return {"status": "success", "message": "Logged out successfully"}
 
 @router.post("/forgot-password")
@@ -244,4 +261,9 @@ def reset_password(request: Request, req: ResetPasswordRequest, db: Session = De
 
 @router.get("/me")
 def read_users_me(current_user: User = Depends(get_current_user)):
-    return {"id": current_user.id, "email": current_user.email}
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "is_active": current_user.is_active,
+        "is_admin": getattr(current_user, "is_admin", False),
+    }
