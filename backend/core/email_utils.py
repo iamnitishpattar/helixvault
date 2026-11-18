@@ -31,16 +31,16 @@ def send_email_via_smtp(to_email: str, subject: str, html_content: str):
         part = MIMEText(html_content, "html")
         msg.attach(part)
         
-        # Connect to Gmail SMTP server using standard TLS port 587
+        # Connect to Gmail SMTP server with short 3s timeout to prevent request hanging on cloud port filters
         try:
-            server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+            server = smtplib.SMTP("smtp.gmail.com", 587, timeout=3)
             server.ehlo()
             server.starttls()
             server.ehlo()
             server.login(smtp_email, smtp_pwd)
         except Exception:
             # Fallback to SSL port 465
-            server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
+            server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=3)
             server.login(smtp_email, smtp_pwd)
 
         server.sendmail(smtp_email, to_email, msg.as_string())
