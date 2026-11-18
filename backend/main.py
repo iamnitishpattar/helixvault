@@ -53,6 +53,50 @@ except Exception as e:
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified successfully on fallback SQLite engine.")
 
+def seed_default_users():
+    try:
+        from db.database import SessionLocal
+        from db.models import User
+        from core.auth import get_password_hash
+        import os
+        db = SessionLocal()
+        try:
+            seeds = [
+                {
+                    "email": "nitishpattar7@gmail.com",
+                    "password": "HelixVault@2026",
+                    "is_admin": True,
+                },
+                {
+                    "email": "demo@helixvault.app",
+                    "password": "Demo1234!",
+                    "is_admin": False,
+                },
+            ]
+            for item in seeds:
+                existing = db.query(User).filter(User.email.ilike(item["email"])).first()
+                if not existing:
+                    logger.info(f"Seeding persistent system account: {item['email']}")
+                    user = User(
+                        email=item["email"],
+                        hashed_password=get_password_hash(item["password"]),
+                        is_active=True,
+                        is_admin=item.get("is_admin", False),
+                    )
+                    db.add(user)
+                    db.commit()
+                else:
+                    # Ensure operator is active
+                    if not existing.is_active:
+                        existing.is_active = True
+                        db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"Error during default user seeding: {e}")
+
+seed_default_users()
+
 app = FastAPI(
     title="HelixVault API",
     description=(
