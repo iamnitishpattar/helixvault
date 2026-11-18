@@ -330,34 +330,63 @@ def process_decode(task_id: str, contents: bytes, filename: str, password: Optio
 
         # Intelligent Vault-Aware Sequence Restoration:
         # If the uploaded file is a truncated export construct, restore the full archival sequence from Vault!
-        clean_base = filename.replace('.fasta', '').replace('.gb', '').replace('.genbank', '').strip()
-        clean_base = re.sub(r'\s*\(\d+\)$', '', clean_base).strip()
+        clean_base = re.sub(r'(\.fasta|\.gb|\.genbank|\.txt|\.dna|\(\d+\)|\s)+$', '', filename, flags=re.IGNORECASE).strip()
+        clean_base_no_ext = re.sub(r'\.[a-zA-Z0-9]+$', '', clean_base).strip()
 
         db_fallback = SessionLocal()
         try:
             match_file = db_fallback.query(EncodedFile).filter(
-                EncodedFile.filename.ilike(f"%{clean_base}%")
+                (EncodedFile.filename.ilike(f"%{clean_base}%")) |
+                (EncodedFile.filename.ilike(f"%{clean_base_no_ext}%"))
             ).order_by(EncodedFile.id.desc()).first()
             if match_file and match_file.dna_sequence and len(match_file.dna_sequence) > len(dna_sequence):
                 logger.info(f"Restoring full archival DNA sequence from Vault for {clean_base} ({len(match_file.dna_sequence)} bp)")
                 dna_sequence = match_file.dna_sequence
-                use_fountain = True
                 if match_file.has_steganography:
                     use_steganography = True
+                if match_file.has_error_correction:
+                    use_error_correction = True
         except Exception as e:
             logger.warning(f"Vault fallback lookup error: {e}")
         finally:
             db_fallback.close()
 
+        # Resilient Steganography and Constraint Decoding:
+        extracted_seq = dna_sequence
         if use_steganography:
+            try:
+                candidate = extract_from_host(dna_sequence)
+                if len(candidate) >= 12:
+                    extracted_seq = candidate
+            except Exception as e:
+                logger.warning(f"Steganography extraction failed: {e}")
+                extracted_seq = dna_sequence
 
-            dna_sequence = extract_from_host(dna_sequence)
+        processed_seq = remove_biological_constraints(extracted_seq)
+        
+        try:
+            data_bytes, orig_filename = decode_dna_to_data(processed_seq)
+        except Exception as e:
+            # If stego extraction corrupted the payload, fall back to direct decoding
+            if use_steganography:
+                logger.info("Primary decode with stego failed; retrying without steganography extraction...")
+                processed_seq = remove_biological_constraints(dna_sequence)
+                data_bytes, orig_filename = decode_dna_to_data(processed_seq)
+                use_steganography = False
+            else:
+                raise e
 
-            
-
-        dna_sequence = remove_biological_constraints(dna_sequence)
-
-        data_bytes, orig_filename = decode_dna_to_data(dna_sequence)
+        # If decoded filename contains corrupted/unprintable characters, auto-recover from direct sequence
+        valid_exts = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.txt', '.doc', '.docx', '.zip', '.csv', '.json', '.bin')
+        if use_steganography and not any(orig_filename.lower().endswith(ext) for ext in valid_exts):
+            try:
+                processed_seq_fb = remove_biological_constraints(dna_sequence)
+                fb_data_bytes, fb_filename = decode_dna_to_data(processed_seq_fb)
+                if any(fb_filename.lower().endswith(ext) for ext in valid_exts):
+                    logger.info(f"Auto-recovered from accidental steganography toggle: using clean '{fb_filename}'")
+                    data_bytes, orig_filename = fb_data_bytes, fb_filename
+            except Exception:
+                pass
 
         if use_fountain:
 
@@ -567,68 +596,23 @@ def download_dna_file(
 
         
 
-    seq = ""
-
-    if (file_meta.dna_length_bp or 0) <= 2_000_000:
-
-        try:
-
-            raw_rec = db.query(EncodedFile.dna_sequence).filter(EncodedFile.id == file_id).first()
-
-            if raw_rec and raw_rec[0]:
-
-                seq = raw_rec[0]
-
-        except (MemoryError, Exception) as e:
-
-            logger.warning(f"MemoryError or read failure for file {file_id}: {e}")
-
-            seq = ""
-
+    raw_rec = db.query(EncodedFile.dna_sequence).filter(EncodedFile.id == file_id).first()
+    seq = raw_rec[0] if raw_rec and raw_rec[0] else ""
     if not seq:
-
-        import hashlib
-
-        seed_data = f"HV_ARCHIVE_{file_meta.id}_{file_meta.filename}_{file_meta.dna_length_bp}".encode('utf-8')
-
-        rep_payload = bytearray()
-
-        for i in range(100):
-
-            rep_payload.extend(hashlib.sha256(seed_data + str(i).encode()).digest())
-
-        seq = encode_data_to_dna(bytes(rep_payload), file_meta.filename)
-
-    display_seq = seq[:50000] if len(seq) > 50000 else seq
+        raise HTTPException(status_code=404, detail="DNA sequence not found in archive")
 
     seq_id = f"HV_{file_meta.filename.replace('.', '_')}"
-
-    
-
-    desc = f"HelixVault Synthetic DNA Archive - {file_meta.filename} (Total bp: {file_meta.dna_length_bp or len(seq)})"
-
-    if (file_meta.dna_length_bp or 0) > 50000 or len(seq) > 50000:
-
-        desc += " [SnapGene/Benchling Compatible Construct]"
+    desc = f"HelixVault Synthetic DNA Archive - {file_meta.filename} (Total bp: {len(seq)})"
 
     if format == "fasta":
-
-        content = generate_fasta(display_seq, seq_id, description=desc)
-
+        content = generate_fasta(seq, seq_id, description=desc)
         filename = f"{file_meta.filename}.fasta"
-
         media_type = "text/plain"
-
     elif format == "genbank":
-
-        content = generate_genbank(display_seq, seq_id, description=desc)
-
+        content = generate_genbank(seq, seq_id, description=desc)
         filename = f"{file_meta.filename}.gb"
-
         media_type = "text/plain"
-
     else:
-
         raise HTTPException(status_code=400, detail="Invalid format")
 
         
