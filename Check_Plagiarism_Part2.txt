@@ -1,0 +1,88 @@
+To protect against chemical and PCR degradation, payloads are divided into 205-byte symbols and encoded into 255-byte codewords using an RS(255, 205) code over GF(256) [7]. By the Singleton bound, each block can repair up to 25 corrupted symbol bytes (200 bit errors per 2,040-bit frame), adding a predictable 1.24x overhead.
+
+C.  Stage 3: Context-Dependent Base-3 Encoding
+
+Chemical DNA synthesis fails rapidly when identical nucleotides repeat. HelixVault employs a finite-state Base-3 codec where each byte is represented as six base-3 digits (3^6 = 729 > 256). Nucleotide mapping is conditioned on the previous base, strictly forbidding identical consecutive output:
+
+Context 'A' -> [C, G, T]       Context 'C' -> [A, G, T]
+  Context 'G' -> [A, C, T]       Context 'T' -> [A, C, G]
+
+Because adjacent bases cannot match, homopolymer runs >= 2 are eliminated by design. Precalculated 4 x 256 lookup tables achieve single-core throughputs of 10-12 MB/s at a fixed density of 6 bases per byte.
+
+D.  Stage 4: LT Fountain Codes (Erasure ECC)
+
+For oligo pool dropout channels, HelixVault implements Luby Transform (LT) codes [8]. Systematic encoding transmits the K source blocks verbatim, followed by XOR parity droplets sampled from the Robust Soliton distribution, guaranteeing packet recovery under sequencing dropouts.
+
+E.  Stage 5: Biological Steganography
+
+To conceal synthetic payloads, sequences are inserted into natural bacterial carrier genomes fetched from NCBI via BioPython [6]. Universal marker codons (ATG and GATTACA) flank the payload within the carrier (e.g., E. coli K-12: NC_000913.3), making the sequence appear native under casual inspection.
+
+A.  AI Co-Pilot with RAG
+
+The AI assistant uses Groq-hosted Llama-3.3-70B. Contextual user queries trigger vector similarity searches across 64-dimensional sequence embeddings, allowing researchers to explore vault metrics and biological features conversationally.
+
+B.  Plasmid Engineering Workbench
+
+The workbench simulates laboratory restriction cloning. Users pick pUC19 (2,686 bp) or pBR322 (4,361 bp) vectors. The engine digests the Multiple Cloning Site (MCS), splices the synthetic payload, updates all feature coordinates, and generates annotated GenBank files alongside interactive circular plasmid maps.
+
+C.  Biosecurity Screening
+
+Following IGSC synthetic biology standards, every generated sequence is scanned against dangerous pathogen motifs and restriction enzyme cleavage sites. Sequences scoring under 60/100 are flagged for biosecurity review.
+
+D.  In-Memory Bio-Compute Suite
+
+Seven non-destructive diagnostic tools operate directly over stored DNA sequences without decoding: Motif Search, Keyword Matching, Semantic Search, GC Content Visualizer, Longevity Modeler, and Synthesis Cost / Physical Mass Estimators.
+
+VI.  Security Architecture
+
+HelixVault incorporates defense-in-depth security across all endpoints:
+
+•  Authentication JWTs reside in HttpOnly, SameSite=Lax cookies, preventing script-based token theft.
+
+•  User passwords are hashed using bcrypt (cost factor >= 12) for strong brute-force resistance.
+
+•  HTTPS and TLS encryption are enforced across Vercel and Render cloud infrastructure.
+
+•  SlowAPI rate limiters protect authentication and computational endpoints against automated attacks.
+
+•  Custom FastAPI exception handlers sanitize 500 errors to prevent internal database dumps.
+
+•  SQLAlchemy ORM with parameterized queries prevents SQL injection vulnerabilities.
+
+•  User accounts are verified through 6-digit random OTP codes with 10-minute expiration.
+
+VII.  Experimental Evaluation and Results
+
+A.  Verification Methodology
+
+System verification combined unit tests, API integration tests, biological mutation simulations, and UI load testing. Backend suites ran with pytest on SQLite test fixtures, and frontend components were tested using Vitest.
+
+B.  Functional Validation Outcomes
+
+Table I summarizes verification results across ten critical operational test cases. All tests passed, meeting functional specifications.
+
+TABLE I
+SYSTEM VERIFICATION AND FUNCTIONAL TEST OUTCOMES
+
+C.  Performance and Throughput
+
+On a Render.com tier (0.5 vCPU, 512 MB RAM), encoding a 1.0 MB PDF completed in 14.8 seconds, well inside the 30-second target. Non-computational endpoints responded below 280 ms. The React client earned a Google Lighthouse score of 82. Pure Base-3 encoding throughput reached 10.4 MB/s.
+
+D.  Biophysical Modeling
+
+Table II summarizes biophysical metrics calculated via calculate_metrics() in bio_utils.py, estimating physical DNA length and synthesis costs across sample files.
+
+TABLE II
+BIOPHYSICAL ATTRIBUTES ACROSS REPRESENTATIVE DIGITAL ASSETS
+
+VIII.  Discussion
+
+HelixVault proves that the entire workflow of digital DNA storage can be packaged within a usable web platform. The context-driven Base-3 codec proves that homopolymers can be avoided by mathematical design rather than reactive post-processing, giving significant throughput benefits over trial-and-error sequence filtering.
+
+The primary challenge remains the cost of oligonucleotide synthesis ($0.10/bp), where a 1.0 MB payload costs roughly $775 to synthesize. However, as enzymatic synthesis methods mature, synthesis costs are expected to decline sharply, making molecular archival viable for long-term cold records.
+
+IX.  Conclusion
+
+We presented HelixVault, an integrated web platform implementing verifiable digital data storage in synthetic DNA. The system proves eight core capabilities: deterministic homopolymer exclusion, AES-256 encryption, RS(255, 205) fault recovery, genomic carrier steganography, plasmid vector assembly, biosecurity screening, conversational RAG assistance, and full cloud deployment.
+
+Future work will explore commercial synthesis API integrations, evaluate LDPC codes against insertion-deletion channel errors, and incorporate cryptographic hash chains for provenance auditing.

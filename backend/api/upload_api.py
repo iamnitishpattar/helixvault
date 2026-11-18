@@ -156,6 +156,8 @@ async def finalize_chunked_upload(
     use_steganography: bool = Form(False),
     use_fountain: bool = Form(False),
     fountain_overhead: float = Form(1.5, ge=1.0, le=5.0),
+    steganography_carrier: Optional[str] = Form(None),
+    carrier_accession: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -196,12 +198,14 @@ async def finalize_chunked_upload(
     task_id = str(uuid.uuid4())
     task_store[task_id] = {"status": "processing", "created_at": time.time()}
 
+    effective_carrier = carrier_accession or steganography_carrier
     background_tasks.add_task(
         process_encode,
         task_id, contents, filename, password,
         use_error_correction, use_steganography,
         int(current_user.id),  # type: ignore
         use_fountain, fountain_overhead,
+        effective_carrier,
     )
 
     logger.info(
@@ -322,6 +326,8 @@ async def complete_s3_multipart(
     use_steganography: bool = Form(False),
     use_fountain: bool = Form(False),
     fountain_overhead: float = Form(1.5, ge=1.0, le=5.0),
+    steganography_carrier: Optional[str] = Form(None),
+    carrier_accession: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -370,12 +376,14 @@ async def complete_s3_multipart(
     task_id = str(uuid.uuid4())
     task_store[task_id] = {"status": "processing", "created_at": time.time()}
 
+    effective_carrier = carrier_accession or steganography_carrier
     background_tasks.add_task(
         process_encode,
         task_id, contents, filename, password,
         use_error_correction, use_steganography,
         int(current_user.id),  # type: ignore
         use_fountain, fountain_overhead,
+        effective_carrier,
     )
 
     logger.info(f"S3 upload → encode task {task_id} created for '{filename}' (user {current_user.id})")

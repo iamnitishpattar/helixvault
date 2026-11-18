@@ -7,8 +7,18 @@ venv/
 .venv/
 env/
 .env
+# Databases & Cache
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
+.coverage
+backend/data/ncbi_cache/
+backend/temp_uploads/
+
+# Large binaries & media
+*.mp4
+*.zip
 
 # Node / Frontend
 node_modules/

@@ -178,6 +178,13 @@ def remove_fountain_code(data: bytes) -> bytes:
     if num_droplets == 0:
         return b""
 
+    # Safety guard: prevent MemoryError if non-fountain file was unpacked
+    if num_chunks > num_droplets or num_chunks > 500_000:
+        raise ValueError(
+            f"Invalid Fountain Code header: declared {num_chunks} chunks, but file only has {num_droplets} droplets. "
+            "Ensure 'Use Fountain Codes' is only checked if the file was encoded with Fountain Codes."
+        )
+
     chunks: list = [None] * num_chunks
 
     # ---- Phase 1: read systematic droplets directly ----

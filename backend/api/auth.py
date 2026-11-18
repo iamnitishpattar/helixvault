@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import random
 import string
 
+import os
 from db.database import get_db
 from db.models import User, OTP
 from core.auth import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -171,7 +172,7 @@ def login(request: Request, response: Response, form_data: OAuth2PasswordRequest
         value=f"Bearer {access_token}",
         httponly=True,
         samesite="lax",
-        secure=True,  # Render serves over HTTPS
+        secure=os.getenv("ENVIRONMENT", "").lower() == "production",  # Only secure in HTTPS production
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     

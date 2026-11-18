@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Table 2.1: Literature Survey - Word/Docs Copy-Paste Ready</title>
+<style>
+  body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; margin: 25px 35px; font-size: 10.5pt; color: #0f172a; background: #f8fafc; }
+  .toolbar { position: sticky; top: 0; background: #ffffff; padding: 14px 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 100; border: 1px solid #e2e8f0; }
+  .toolbar h1 { margin: 0; font-size: 15pt; color: #0f172a; }
+  .btn { background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; font-size: 10.5pt; font-weight: 600; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s; }
+  .btn:hover { background: #1d4ed8; }
+  .btn-success { background: #16a34a !important; }
+  .container { background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+  h2 { font-size: 14pt; color: #0f172a; margin-top: 0; margin-bottom: 4px; font-weight: 700; }
+  p.sub { font-size: 10pt; color: #64748b; margin-top: 0; margin-bottom: 18px; font-style: italic; }
+  table { border-collapse: collapse; width: 100%; border: 1.5pt solid #0f172a; font-size: 9.5pt; line-height: 1.35; background: #ffffff; }
+  th { background-color: #0f172a; color: #ffffff; font-weight: bold; padding: 10px 12px; border: 1pt solid #0f172a; text-align: left; font-size: 9.5pt; }
+  td { padding: 9px 11px; border: 0.5pt solid #cbd5e1; vertical-align: top; }
+  tr:nth-child(even) td { background-color: #f8fafc; }
+  .col-num { text-align: center; font-weight: bold; width: 4%; }
+  .col-title { width: 22%; }
+  .col-source { width: 14%; }
+  .col-method { width: 20%; }
+  .col-findings { width: 20%; }
+  .col-gap { width: 20%; }
+  .paper-title { font-weight: 700; color: #0f172a; display: block; margin-bottom: 3px; }
+  .paper-auth { font-style: italic; color: #475569; font-size: 8.5pt; display: block; }
+  .badge-gap { font-weight: bold; color: #dc2626; }
+  .badge-helix { font-weight: bold; color: #2563eb; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div>
+    <h1>Table 2.1: Literature Survey of Existing DNA Data Storage Works</h1>
+    <span style="font-size: 9pt; color: #64748b;">Ready to copy directly into Microsoft Word or Google Docs</span>
+  </div>
+  <button id="copyBtn" class="btn" onclick="copyTable()">
+    📋 Copy Table for Word / Docs
+  </button>
+</div>
+
+<div class="container" id="tableContainer">
+  <h2>Table 2.1: Literature Survey of Existing DNA Data Storage Works</h2>
+  <p class="sub">Comprehensive comparative summary of peer-reviewed benchmarks, error-correcting codecs, and archival architectures (2024&ndash;2026).</p>
+
+  <table id="surveyTable">
+    <thead>
+      <tr>
+        <th class="col-num">#</th>
+        <th class="col-title">Paper Title &amp; Authors</th>
+        <th class="col-source">Journal / Source</th>
+        <th class="col-method">Core Methodology</th>
+        <th class="col-findings">Key Findings &amp; Advantages</th>
+        <th class="col-gap">Research Gap &amp; HelixVault Relevance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="col-num">1</td>
+        <td class="col-title"><span class="paper-title">Adaptive Sampling for Storage of Progressive Images on DNA</span><span class="paper-auth">X. Pic, N. Pinnamaneni, R. Appuswamy</span></td>
+        <td class="col-source">BioRxiv / IEEE<br>2024 &bull; EURECOM</td>
+        <td class="col-method">Hierarchical wavelet progressive image compression paired with an adaptive oligonucleotide physical sampling policy.</td>
+        <td class="col-findings">Enables multi-resolution visual reconstruction at lower sequencing depth; avoids full-read sequencing costs for visual preview.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Tailored exclusively to 2D image matrices.<br><br><span class="badge-helix">[HELIXVAULT]</span> Generalizes progressive multi-tier decoding across arbitrary digital formats (documents, audio, video).</td>
+      </tr>
+      <tr>
+        <td class="col-num">2</td>
+        <td class="col-title"><span class="paper-title">DNA-MGC+: A Versatile Codec for Reliable and Resource-Efficient Storage</span><span class="paper-auth">R. Khabbaz, J. Mateos, M. Antonini, S. Kas Hanna</span></td>
+        <td class="col-source">Nature Comp. Sci.<br>2025 &bull; CNRS / Pearcode</td>
+        <td class="col-method">Modified Goldman rotating ternary codec (MGC+) targeting simultaneous insertion, deletion, and substitution (IDS) channel noise.</td>
+        <td class="col-findings">Achieves 28% higher logical density over baseline Goldman codes; successfully validated in vitro with Illumina and Oxford Nanopore.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> High algorithmic complexity for large batch files.<br><br><span class="badge-helix">[HELIXVAULT]</span> Implements optimized Base-3 rotating ternary tables with strict homopolymer suppression (&le;3 bp) and 40&ndash;60% GC tuning.</td>
+      </tr>
+      <tr>
+        <td class="col-num">3</td>
+        <td class="col-title"><span class="paper-title">Error-Correcting Codes for Two Bursts of (t1, t2)-DI with Low Complexity</span><span class="paper-auth">Y. Liu, T. M. Duman (IEEE Fellow)</span></td>
+        <td class="col-source">IEEE / SNIA<br>2026 &bull; Bilkent University</td>
+        <td class="col-method">Construction of linear-complexity channel error-correcting codes tailored for multi-burst deletion and insertion occurrences in sequencing.</td>
+        <td class="col-findings">Provides sub-logarithmic redundancy overhead while guaranteeing exact packet alignment and synchronization under localized burst drops.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Theoretical formulation without software UI.<br><br><span class="badge-helix">[HELIXVAULT]</span> Implements packetized oligo headers with Reed-Solomon parity to counter burst synthesis-dropout anomalies.</td>
+      </tr>
+      <tr>
+        <td class="col-num">4</td>
+        <td class="col-title"><span class="paper-title">Error-Correcting Codes for the Sum Channel</span><span class="paper-auth">L. Abboud, E. Yaakobi</span></td>
+        <td class="col-source">ResearchGate / ISIT<br>2026 &bull; Technion</td>
+        <td class="col-method">Sum channel matrix algebraic modeling with parity-sum rows for distributed matrix-encoded storage pools.</td>
+        <td class="col-findings">Constructs two-deletion-correcting matrix codes with optimal redundancy bounds 2&middot;&lceil;log<sub>2</sub> log<sub>2</sub> n&rceil; + log<sub>2</sub> l.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Focuses on matrix channel abstractions.<br><br><span class="badge-helix">[HELIXVAULT]</span> Employs horizontal/vertical parity rows to reconstruct missing oligo fragments without re-synthesizing the whole pool.</td>
+      </tr>
+      <tr>
+        <td class="col-num">5</td>
+        <td class="col-title"><span class="paper-title">Expected Recovery Time in DNA-based Distributed Storage Systems</span><span class="paper-auth">A. Levy, R. Con, E. Yaakobi, H. M. Kiah</span></td>
+        <td class="col-source">RSC Advances / IEEE<br>2026 &bull; Technion / NTU</td>
+        <td class="col-method">Erasure-coded multi-container biological architecture with statistical sampling distribution analysis.</td>
+        <td class="col-findings">Derives exact mathematical expectations for random read sampling needed to rebuild damaged or decayed storage containers.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Lacks automated physical lab protocols.<br><br><span class="badge-helix">[HELIXVAULT]</span> Combines multi-carrier BioDatabase indexing with dynamic freezer S.O.P. generation (Rack/Box/Tube assignments).</td>
+      </tr>
+      <tr>
+        <td class="col-num">6</td>
+        <td class="col-title"><span class="paper-title">On the Capacity of Noisy Frequency-based Channels</span><span class="paper-auth">Y. Gerzon, I. Shomorony, N. Weinberger</span></td>
+        <td class="col-source">IEEE Access<br>2025 &bull; Technion / UIUC</td>
+        <td class="col-method">Short-molecule order-free DNA encoding using concentration histograms rather than ordered base sequences.</td>
+        <td class="col-findings">Bypasses synthesis length barriers by storing data in relative molecular concentrations; proves non-asymptotic capacity bounds.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Highly susceptible to chemical pipetting noise.<br><br><span class="badge-helix">[HELIXVAULT]</span> Adopts ordered nucleotide oligos with in-silico PCR primer indexing for high-precision Illumina/Nanopore pipelines.</td>
+      </tr>
+      <tr>
+        <td class="col-num">7</td>
+        <td class="col-title"><span class="paper-title">Random Access Expectation in DNA Storage and Fountain Codes</span><span class="paper-auth">C. Hofmeister, R. Bitar, E. Yaakobi</span></td>
+        <td class="col-source">Precedence / IEEE ITW<br>2025 &bull; TU Munich</td>
+        <td class="col-method">Equivalence mapping between binary fully symmetric linear codes and rateless Luby Transform (LT) Fountain codes.</td>
+        <td class="col-findings">Minimizes sequencing read overhead for targeted document queries; provides superior random access without decoding entire pools.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Evaluated primarily through synthetic simulations.<br><br><span class="badge-helix">[HELIXVAULT]</span> Incorporates Fountain parity health checks and BioCompute direct sequence searching without prior binary decoding.</td>
+      </tr>
+      <tr>
+        <td class="col-num">8</td>
+        <td class="col-title"><span class="paper-title">Robust Composite DNA Storage under Sampling Randomness &amp; IDS Errors</span><span class="paper-auth">B. Tegin, T. M. Duman</span></td>
+        <td class="col-source">Advanced Science<br>2024 &bull; CentraleSup&eacute;lec</td>
+        <td class="col-method">Composite nucleotide mixtures mapped onto a 3D probability simplex with multinomial channel error-correction.</td>
+        <td class="col-findings">Achieves higher per-cycle density than standard 4-base alphabets while maintaining resilience against deletion and substitution noise.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Requires specialized non-standard synthesis hardware.<br><br><span class="badge-helix">[HELIXVAULT]</span> Utilizes standard A,C,G,T chemistry compatible with commercial DNA synthesis providers (Twist, IDT, GenScript).</td>
+      </tr>
+      <tr>
+        <td class="col-num">9</td>
+        <td class="col-title"><span class="paper-title">The DNA Coverage Depth Problem: Duality &amp; Weight Distributions</span><span class="paper-auth">M. Bertuzzo, A. Ravagnani, E. Yaakobi</span></td>
+        <td class="col-source">Nat. Sci. Rev.<br>2024 &bull; Eindhoven / Technion</td>
+        <td class="col-method">Combinatorial duality and linear code weight distributions to calculate coverage depth bounds in random sequencing read draws.</td>
+        <td class="col-findings">Provides closed-form formulas for expected read coverage needed to guarantee full-rank matrix reconstruction in small finite fields.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Mathematical proof without practical tool integration.<br><br><span class="badge-helix">[HELIXVAULT]</span> Calibrates minimum coverage depth thresholds directly in the HelixVault Decoder recovery pipeline.</td>
+      </tr>
+      <tr>
+        <td class="col-num">10</td>
+        <td class="col-title"><span class="paper-title">Two Multi-Draw Coupon Collector Models with Retention Rules</span><span class="paper-auth">A. V. Doumas, S. Spektor</span></td>
+        <td class="col-source">DNA Alliance / Appl. Prob.<br>2026 &bull; Alliance Standard</td>
+        <td class="col-method">Multi-draw coupon collector asymptotics modeling strand dropout probabilities during repeated PCR and enzymatic amplification.</td>
+        <td class="col-findings">Formulates exact variance Var ~ (&pi;<sup>2</sup>/6)(N<sup>2</sup>/d<sup>2</sup>) for molecular recovery; establishes non-uniform dropout rates in physical pools.</td>
+        <td class="col-gap"><span class="badge-gap">[GAP]</span> Focused strictly on probability theory.<br><br><span class="badge-helix">[HELIXVAULT]</span> Drives the environmental degradation simulator and Reed-Solomon oversampling rates (&ge;20%) in HelixVault synthesis.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function copyTable() {
+  const table = document.getElementById('surveyTable');
+  const btn = document.getElementById('copyBtn');
+  
+  const range = document.createRange();
+  range.selectNode(table);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  
+  try {
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    btn.innerHTML = '✅ Copied to Clipboard! (Paste into Word)';
+    btn.classList.add('btn-success');
+    setTimeout(() => {
+      btn.innerHTML = '📋 Copy Table for Word / Docs';
+      btn.classList.remove('btn-success');
+    }, 3500);
+  } catch (err) {
+    alert('Please select the table manually and press Ctrl+C');
+  }
+}
+</script>
+</body>
+</html>

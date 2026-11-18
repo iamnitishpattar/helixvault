@@ -68,25 +68,35 @@ import re
 
 def generate_genbank(dna_seq: str, sequence_id: str = "HV_001", description: str = "Synthetic DNA Data") -> str:
     clean_id = re.sub(r'[^a-zA-Z0-9_]', '', sequence_id)[:16] or "HV_001"
-    
-    # High performance custom GenBank generator to bypass Biopython's slow formatter
+
+    # High performance custom GenBank generator to bypass Biopython's slow formatter.
+    # IMPORTANT: The sequence MUST be written in uppercase so that decode_dna_to_data
+    # can match its lookup tables (which are keyed on uppercase A/C/G/T).  Writing
+    # lowercase here was the root cause of all content being decoded as zeros.
+    seq_len = len(dna_seq)
+
+    # Strict GenBank LOCUS line (fixed-column layout required by Biopython parser)
+    # LOCUS <id padded to 16> <length> bp    DNA     linear   UNK DD-MON-YYYY
+    locus_line = f"LOCUS       {clean_id:<16} {seq_len:>11} bp    DNA     linear   UNK 01-JAN-2026"
+
     lines = [
-        f"LOCUS       {clean_id.ljust(16)} {len(dna_seq)} bp    DNA     linear   UNK 01-JAN-2026",
+        locus_line,
         f"DEFINITION  {description}",
         "FEATURES             Location/Qualifiers",
-        f"     source          1..{len(dna_seq)}",
+        f"     source          1..{seq_len}",
         '                     /organism="synthetic DNA construct"',
         '                     /mol_type="other DNA"',
         "ORIGIN      "
     ]
-    
-    dna_seq = dna_seq.lower()
-    for i in range(0, len(dna_seq), 60):
-        chunk = dna_seq[i:i+60]
+
+    # Write sequence in UPPERCASE so the decoder lookup tables work correctly
+    dna_upper = dna_seq.upper()
+    for i in range(0, seq_len, 60):
+        chunk = dna_upper[i:i+60]
         blocks = [chunk[j:j+10] for j in range(0, len(chunk), 10)]
         line = f"{i+1:9} " + " ".join(blocks)
         lines.append(line)
-        
+
     lines.append("//")
     return "\n".join(lines) + "\n"
 
@@ -118,4 +128,6 @@ def extract_sequence_from_file(file_content: bytes, filename: str) -> str:
     if not records:
         raise ValueError("No sequence found in file")
 
-    return str(records[0].seq)
+    # Always return uppercase so decode_dna_to_data lookup tables (keyed on A/C/G/T) work
+    # regardless of whether the source file stored the sequence in lower or mixed case.
+    return str(records[0].seq).upper()

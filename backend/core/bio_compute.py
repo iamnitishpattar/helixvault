@@ -95,7 +95,9 @@ def search_in_dna(db: Session, user_id: int, query: str, mode: str = "motif") ->
     total_matches = 0
 
     for f in files:
-        dna_seq = _get_or_fallback_dna(f)
+        raw_dna = _get_or_fallback_dna(f)
+        # Scan active window (up to 250k bp per archive) for high-speed in-memory pattern execution
+        dna_seq = raw_dna[:250000] if raw_dna else ""
         matches_in_file = []
         
         # Limit search to first 50 matches per file for performance

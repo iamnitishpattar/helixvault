@@ -36,6 +36,7 @@ class EncodedFile(Base):
     is_encrypted = Column(Boolean, default=False)
     has_error_correction = Column(Boolean, default=False)
     has_steganography = Column(Boolean, default=False)
+    carrier_accession = Column(String, nullable=True)
     dna_sequence = Column(String, nullable=True)
     text_preview = Column(String, nullable=True)
     created_at = Column(DateTime, default=get_utc_now)

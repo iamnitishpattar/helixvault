@@ -1,0 +1,160 @@
+HelixVault: A Full-Stack Web Application for DNA-Based Digital Data Encoding with AES-256 Encryption, Reed-Solomon Error Correction, and Biological Steganography
+
+Nitish Pattar¹
+
+¹Department of Computer Science & Applications
+
+Master of Computer Applications (MCA) Program, India
+
+nitish@helixvault.io
+
+Abstract -- In this paper, we develop HelixVault, an accessible cloud platform designed to encode arbitrary computer files into synthetic DNA sequences and restore them with exact fidelity. While traditional magnetic tape and optical discs deteriorate within years and demand continuous energy, DNA molecules offer physical stability over centuries and unmatched volumetric density. HelixVault addresses the practical software gap in molecular archiving through a unified web pipeline. Our platform couples a context-dependent Base-3 codec that mathematically prevents homopolymer synthesis errors with AES-256-CBC cryptographic protection and RS(255, 205) Reed-Solomon error correction capable of fixing up to 25 symbol corruptions per codeword. The software also embeds encoded sequences within real bacterial genomes from NCBI for biological steganography, offers an in silico plasmid engineering workbench for pUC19 and pBR322 vectors, screens for regulated pathogen motifs, and includes a retrieval-augmented AI assistant. Deployed using FastAPI and React, empirical tests show 100% byte recovery under simulated sequence mutations, establishing an open, practical benchmark for digital DNA storage.
+
+Index Terms -- Synthetic DNA data storage, homopolymer prevention, Base-3 codec, Reed-Solomon RS(255, 205), AES-256 encryption, biological steganography, Luby Transform codes, plasmid cloning, biosecurity screening, FastAPI, React.
+
+I.  Introduction
+
+The relentless production of digital assets across commerce and research has pushed traditional storage technologies to their practical boundaries. Solid-state drives, magnetic platters, and archival tapes suffer from physical decay, media obsolescence, and heavy electrical consumption in cooling facilities. Synthetic DNA offers a compelling alternative: it stores information at the molecular scale, requires zero electrical power during dormancy, and remains readable across thousands of years under basic preservation conditions [1], [2].
+
+Seminal wet-lab demonstrations proved the core concept of molecular archival: Church et al. [1] encoded text files into oligonucleotides; Goldman et al. [2] introduced rotating base assignments to reduce synthesis errors; Organick et al. [3] demonstrated targeted random access via PCR primers; and Erlich and Zielinski [4] achieved high channel capacity with fountain codes. Despite these milestones, molecular data storage has largely remained restricted to bespoke terminal scripts, lacking accessible web interfaces, integrated data security, and synthetic biology plasmid tools.
+
+We created HelixVault to bridge this gap by delivering a production-grade, full-stack software environment. The primary contributions of our work are:
+
+•  A finite-state Base-3 codec that mathematically prevents homopolymer runs of identical bases by conditioning each nucleotide on its preceding context.
+
+•  A multi-stage pipeline combining AES-256-CBC encryption, RS(255, 205) Reed-Solomon error correction, and NCBI genomic carrier steganography.
+
+•  A cloud-hosted SaaS architecture built on FastAPI, React, and PostgreSQL with asynchronous worker task management.
+
+•  A synthetic biology Plasmid Workbench supporting in silico restriction digestion, vector ligation into pUC19/pBR322, and GenBank export.
+
+•  An automated biosecurity screen validating all sequences against curated pathogen profiles prior to physical synthesis.
+
+•  An AI Co-Pilot with Retrieval-Augmented Generation (RAG) enabling natural-language querying over encoded biological archives.
+
+II.  Related Work
+
+Early digital encoding experiments mapped binary values directly to nucleotides, causing repetitive base runs that elevated chemical synthesis failure rates [1]. Goldman et al. [2] improved synthesis compatibility by converting data into ternary representations and rotating nucleotide assignments, albeit with four-fold oligo redundancy.
+
+Erlich and Zielinski [4] advanced erasure channel resilience through Luby Transform (LT) fountain codes, which directly informed the fountain_codes.py module in our architecture. Organick et al. [3] proved that sequence-specific primers enable random-access reading across large pools. While standalone utilities such as DNA Chisel [5] optimize sequence fragments, HelixVault uniquely unifies encryption, forward error correction, genomic steganography, and plasmid engineering within an intuitive web interface.
+
+III.  System Architecture
+
+HelixVault uses a modern three-tier cloud architecture separated into presentation, application logic, and relational persistence.
+
+A.  Frontend Presentation Layer (React & Vite)
+
+The client interface is a single-page application built with React 19 and Vite 8, hosted on Vercel CDN at helixvault-omega.vercel.app. The user interface applies a pure CSS glassmorphic design system with interactive 3D nucleotide animations. Application state is partitioned across three isolated React Contexts handling user sessions, genomic carrier selection, and system notifications.
+
+B.  Backend Application Layer (Python FastAPI)
+
+Application logic runs on a FastAPI service on Render.com at helixvault.onrender.com. The REST API is organized into six functional routers: auth, dna_storage, bio_integration, compute_api, plasmid_api, and admin. Heavy computational encoding routines execute as asynchronous background tasks tracked through UUIDs. Core modules in backend/core/ supply the Base-3 codec, Reed-Solomon algebraic operations, steganography engines, vector embeddings, and biosecurity checks.
+
+C.  Data Persistence (PostgreSQL)
+
+Application state is stored in PostgreSQL 15 on Render.com using parameterized SQLAlchemy 2.0 queries. The database tracks user accounts, full-length nucleotide sequences, biophysical metrics, and time-limited verification OTPs. A local SQLite database provides parity during development.
+
+D.  DevOps and Deployment
+
+The stack is fully containerized using Docker Compose. A Windows script (start_project.bat) provides automated local setup. Continuous integration via GitHub Actions runs automated pytest and Vitest suites on every repository push.
+
+IV.  Methodology: The DNA Encoding Pipeline
+
+HelixVault converts raw binary files into biologically synthesizable DNA through five reversible steps.
+
+A.  Stage 1: AES-256-CBC Encryption
+
+To ensure confidentiality prior to physical synthesis, files can be encrypted using AES-256-CBC. Keys are generated using PBKDF2-HMAC-SHA256 with 100,000 iterations over a 16-byte random salt. A random 16-byte initialization vector guarantees semantic security, prepending the ciphertext.
+
+B.  Stage 2: Reed-Solomon Error Correction
+
+To protect against chemical and PCR degradation, payloads are divided into 205-byte symbols and encoded into 255-byte codewords using an RS(255, 205) code over GF(256) [7]. By the Singleton bound, each block can repair up to 25 corrupted symbol bytes (200 bit errors per 2,040-bit frame), adding a predictable 1.24x overhead.
+
+C.  Stage 3: Context-Dependent Base-3 Encoding
+
+Chemical DNA synthesis fails rapidly when identical nucleotides repeat. HelixVault employs a finite-state Base-3 codec where each byte is represented as six base-3 digits (3^6 = 729 > 256). Nucleotide mapping is conditioned on the previous base, strictly forbidding identical consecutive output:
+
+Context 'A' -> [C, G, T]       Context 'C' -> [A, G, T]
+  Context 'G' -> [A, C, T]       Context 'T' -> [A, C, G]
+
+Because adjacent bases cannot match, homopolymer runs >= 2 are eliminated by design. Precalculated 4 x 256 lookup tables achieve single-core throughputs of 10-12 MB/s at a fixed density of 6 bases per byte.
+
+D.  Stage 4: LT Fountain Codes (Erasure ECC)
+
+For oligo pool dropout channels, HelixVault implements Luby Transform (LT) codes [8]. Systematic encoding transmits the K source blocks verbatim, followed by XOR parity droplets sampled from the Robust Soliton distribution, guaranteeing packet recovery under sequencing dropouts.
+
+E.  Stage 5: Biological Steganography
+
+To conceal synthetic payloads, sequences are inserted into natural bacterial carrier genomes fetched from NCBI via BioPython [6]. Universal marker codons (ATG and GATTACA) flank the payload within the carrier (e.g., E. coli K-12: NC_000913.3), making the sequence appear native under casual inspection.
+
+V.  Key System Modules
+
+A.  AI Co-Pilot with RAG
+
+The AI assistant uses Groq-hosted Llama-3.3-70B. Contextual user queries trigger vector similarity searches across 64-dimensional sequence embeddings, allowing researchers to explore vault metrics and biological features conversationally.
+
+B.  Plasmid Engineering Workbench
+
+The workbench simulates laboratory restriction cloning. Users pick pUC19 (2,686 bp) or pBR322 (4,361 bp) vectors. The engine digests the Multiple Cloning Site (MCS), splices the synthetic payload, updates all feature coordinates, and generates annotated GenBank files alongside interactive circular plasmid maps.
+
+C.  Biosecurity Screening
+
+Following IGSC synthetic biology standards, every generated sequence is scanned against dangerous pathogen motifs and restriction enzyme cleavage sites. Sequences scoring under 60/100 are flagged for biosecurity review.
+
+D.  In-Memory Bio-Compute Suite
+
+Seven non-destructive diagnostic tools operate directly over stored DNA sequences without decoding: Motif Search, Keyword Matching, Semantic Search, GC Content Visualizer, Longevity Modeler, and Synthesis Cost / Physical Mass Estimators.
+
+VI.  Security Architecture
+
+HelixVault incorporates defense-in-depth security across all endpoints:
+
+•  Authentication JWTs reside in HttpOnly, SameSite=Lax cookies, preventing script-based token theft.
+
+•  User passwords are hashed using bcrypt (cost factor >= 12) for strong brute-force resistance.
+
+•  HTTPS and TLS encryption are enforced across Vercel and Render cloud infrastructure.
+
+•  SlowAPI rate limiters protect authentication and computational endpoints against automated attacks.
+
+•  Custom FastAPI exception handlers sanitize 500 errors to prevent internal database dumps.
+
+•  SQLAlchemy ORM with parameterized queries prevents SQL injection vulnerabilities.
+
+•  User accounts are verified through 6-digit random OTP codes with 10-minute expiration.
+
+VII.  Experimental Evaluation and Results
+
+A.  Verification Methodology
+
+System verification combined unit tests, API integration tests, biological mutation simulations, and UI load testing. Backend suites ran with pytest on SQLite test fixtures, and frontend components were tested using Vitest.
+
+B.  Functional Validation Outcomes
+
+Table I summarizes verification results across ten critical operational test cases. All tests passed, meeting functional specifications.
+
+TABLE I
+SYSTEM VERIFICATION AND FUNCTIONAL TEST OUTCOMES
+
+C.  Performance and Throughput
+
+On a Render.com tier (0.5 vCPU, 512 MB RAM), encoding a 1.0 MB PDF completed in 14.8 seconds, well inside the 30-second target. Non-computational endpoints responded below 280 ms. The React client earned a Google Lighthouse score of 82. Pure Base-3 encoding throughput reached 10.4 MB/s.
+
+D.  Biophysical Modeling
+
+Table II summarizes biophysical metrics calculated via calculate_metrics() in bio_utils.py, estimating physical DNA length and synthesis costs across sample files.
+
+TABLE II
+BIOPHYSICAL ATTRIBUTES ACROSS REPRESENTATIVE DIGITAL ASSETS
+
+VIII.  Discussion
+
+HelixVault proves that the entire workflow of digital DNA storage can be packaged within a usable web platform. The context-driven Base-3 codec proves that homopolymers can be avoided by mathematical design rather than reactive post-processing, giving significant throughput benefits over trial-and-error sequence filtering.
+
+The primary challenge remains the cost of oligonucleotide synthesis ($0.10/bp), where a 1.0 MB payload costs roughly $775 to synthesize. However, as enzymatic synthesis methods mature, synthesis costs are expected to decline sharply, making molecular archival viable for long-term cold records.
+
+IX.  Conclusion
+
+We presented HelixVault, an integrated web platform implementing verifiable digital data storage in synthetic DNA. The system proves eight core capabilities: deterministic homopolymer exclusion, AES-256 encryption, RS(255, 205) fault recovery, genomic carrier steganography, plasmid vector assembly, biosecurity screening, conversational RAG assistance, and full cloud deployment.
+
+Future work will explore commercial synthesis API integrations, evaluate LDPC codes against insertion-deletion channel errors, and incorporate cryptographic hash chains for provenance auditing.

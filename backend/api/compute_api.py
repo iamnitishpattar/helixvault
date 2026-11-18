@@ -85,4 +85,12 @@ def copilot_chat(
         reply = ask_copilot(db, current_user.id, req.question)
         return {"status": "success", "data": reply}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI Co-Pilot error: {str(e)}")
+        logger.error(f"AI Co-Pilot error: {e}", exc_info=True)
+        fallback_reply = {
+            "question": req.question,
+            "response": "I encountered an error querying the model. Please check that your encrypted files are properly synchronized in the Vault, or try asking about physical weight, GC content, or motif search.",
+            "tool_used": "system_fallback",
+            "tool_results": {},
+            "vault_metrics": {"total_files": 0, "total_bp": 0, "total_bytes": 0}
+        }
+        return {"status": "success", "data": fallback_reply}

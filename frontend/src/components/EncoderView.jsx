@@ -154,7 +154,10 @@ export default function EncoderView() {
     let stageIdx = 1;
 
     try {
-      const hash = await calculateSHA256(file);
+      let hash = "Hash skipped for large file";
+      if (file.size < 10 * 1024 * 1024) {
+        hash = await calculateSHA256(file);
+      }
       setOriginalFileHash(hash);
 
       const encodeOptions = { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead, carrierAccession };
@@ -584,10 +587,10 @@ export default function EncoderView() {
       </div>
 
       <div className="showcase-card" style={result ? { borderColor: 'var(--accent-gold)' } : {}}>
-        <h3 style={{ marginBottom: '1.5rem' }}>2. Synthesis Result</h3>
+        <h3 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>2. Synthesis Result</h3>
         
         {!result ? (
-          <div className="flex-center" style={{ height: '70%', flexDirection: 'column', color: 'var(--text-secondary)' }}>
+          <div className="flex-center" style={{ height: '70%', flexDirection: 'column', color: 'var(--text-secondary)', textAlign: 'center', width: '100%' }}>
             <DnaVialPlaceholder 
               loading={loading} 
               progressStage={progressStage}

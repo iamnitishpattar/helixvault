@@ -14,10 +14,11 @@ def send_email_via_smtp(to_email: str, subject: str, html_content: str):
     smtp_email = os.getenv("SMTP_EMAIL")
     smtp_pwd = os.getenv("SMTP_PASSWORD")
     
+    import re
+    otp_match = re.search(r'\b\d{6}\b', html_content)
+    otp_display = f" >>> YOUR OTP CODE IS: {otp_match.group(0)} <<< " if otp_match else ""
+
     if not smtp_email or not smtp_pwd:
-        import re
-        otp_match = re.search(r'\b\d{6}\b', html_content)
-        otp_display = f" >>> YOUR OTP CODE IS: {otp_match.group(0)} <<< " if otp_match else ""
         logger.warning(f"\n{'='*50}\n[SIMULATED EMAIL TO: {to_email}]\nSubject: {subject}\n{otp_display}\n{'='*50}")
         return True
         
@@ -30,15 +31,26 @@ def send_email_via_smtp(to_email: str, subject: str, html_content: str):
         part = MIMEText(html_content, "html")
         msg.attach(part)
         
-        # Connect to Gmail SMTP server
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(smtp_email, smtp_pwd)
+        # Connect to Gmail SMTP server using standard TLS port 587
+        try:
+            server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(smtp_email, smtp_pwd)
+        except Exception:
+            # Fallback to SSL port 465
+            server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
+            server.login(smtp_email, smtp_pwd)
+
         server.sendmail(smtp_email, to_email, msg.as_string())
         server.quit()
         logger.info(f"Successfully sent email to {to_email} via SMTP ({smtp_email})")
         return True
     except Exception as e:
-        logger.error(f"Exception sending email via SMTP to {to_email}: {e}", exc_info=True)
+        logger.error(f"Exception sending email via SMTP to {to_email}: {e}")
+        # Log fallback OTP so developer/user is never locked out
+        logger.warning(f"\n{'='*50}\n[EMAIL DELIVERY FAILED - FALLBACK CONSOLE OTP]\nRecipient: {to_email}\nSubject: {subject}\n{otp_display}\nReason: {e}\n{'='*50}")
         return False
 
 def send_otp_email(to_email: str, otp: str):

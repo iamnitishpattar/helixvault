@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+    }
+    .table-card {
+      width: 1200px;
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      border-radius: 12px;
+      padding: 32px 36px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    }
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 3px solid #0f172a;
+    }
+    .table-header h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 23px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+    }
+    .table-header p {
+      font-size: 15px;
+      color: #475569;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .badge-header {
+      background: #0f172a;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    thead th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 14.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 14px 16px;
+      text-align: left;
+      border-top: 2px solid #0f172a;
+      border-bottom: 2px solid #0f172a;
+    }
+    tbody tr {
+      border-bottom: 1.5px solid #cbd5e1;
+    }
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    tbody td {
+      padding: 18px 16px;
+      vertical-align: top;
+      color: #1e293b;
+    }
+    .col-num {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      width: 50px;
+    }
+    .col-title {
+      width: 290px;
+    }
+    .title-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.35;
+      margin-bottom: 6px;
+    }
+    .author-text {
+      font-size: 13.5px;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .venue-tag {
+      display: inline-block;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-size: 12.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      line-height: 1.4;
+    }
+    .col-method {
+      width: 260px;
+      font-size: 14.5px;
+      color: #334155;
+    }
+    .col-findings {
+      width: 280px;
+      font-size: 14.5px;
+      color: #0f172a;
+      font-weight: 500;
+    }
+    .col-relevance {
+      width: 320px;
+      font-size: 14px;
+    }
+    .gap-block {
+      background: #fef2f2;
+      border-left: 3px solid #ef4444;
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 8px;
+      color: #991b1b;
+      line-height: 1.4;
+    }
+    .helix-block {
+      background: #eff6ff;
+      border-left: 3px solid #2563eb;
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      color: #1e40af;
+      line-height: 1.4;
+    }
+    .badge-gap {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      background: #ef4444;
+      color: #ffffff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .badge-helix {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      background: #2563eb;
+      color: #ffffff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .table-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="table-card">
+    <div class="table-header">
+      <div>
+        <h2>Table 2.1: Literature Survey of DNA Data Storage Works &mdash; Part 1 (Papers 1–5)</h2>
+        <p>Progressive Wavelet Encoding, Codec Optimization, Burst Indel Correction & Distributed Matrix Channels</p>
+      </div>
+      <div class="badge-header">HelixVault Project Report</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-title">Paper Title & Authors</th>
+          <th class="col-method">Methodology & Technique</th>
+          <th class="col-findings">Key Findings & Advantages</th>
+          <th class="col-relevance">Research Gap & HelixVault Relevance</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td class="col-num">1</td>
+          <td class="col-title">
+            <div class="title-text">Adaptive Sampling for Storage of Progressive Images on DNA</div>
+            <div class="author-text">X. Pic, N. Pinnamaneni, R. Appuswamy</div>
+            <div class="venue-tag"><b>BioRxiv / IEEE</b> &bull; 2024 &bull; <i>EURECOM & Helixworks</i></div>
+          </td>
+          <td class="col-method">Hierarchical wavelet progressive image compression paired with adaptive oligonucleotide physical sampling policy.</td>
+          <td class="col-findings">Enables multi-resolution image recovery at low sequencing depth; eliminates full-read sequencing costs for visual preview.</td>
+          <td class="col-relevance">
+            <div class="gap-block"><span class="badge-gap">GAP</span> Tailored exclusively to 2D image matrices.</div>
+            <div class="helix-block"><span class="badge-helix">HELIXVAULT</span> Generalizes progressive multi-tier decoding across arbitrary digital formats (documents, audio, video).</div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="col-num">2</td>
+          <td class="col-title">
+            <div class="title-text">DNA-MGC+: A Versatile Codec for Reliable and Resource-Efficient Storage</div>
+            <div class="author-text">R. Khabbaz, J. Mateos, M. Antonini, S. Kas Hanna</div>
+            <div class="venue-tag"><b>Nature Comp. Sci.</b> &bull; 2025 &bull; <i>CNRS / Pearcode</i></div>
+          </td>
+          <td class="col-method">Modified Goldman rotating ternary codec (MGC+) targeting simultaneous insertion, deletion, and substitution (IDS) channel noise.</td>
+          <td class="col-findings">Achieves 28% higher logical density over baseline Goldman codes; validated in vitro with Illumina and Oxford Nanopore.</td>
+          <td class="col-relevance">
+            <div class="gap-block"><span class="badge-gap">GAP</span> High algorithmic complexity for large batch files.</div>
+            <div class="helix-block"><span class="badge-helix">HELIXVAULT</span> Implements optimized Base-3 rotating ternary tables with strict homopolymer suppression (<=3 bp) and 40-60% GC tuning.</div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="col-num">3</td>
+          <td class="col-title">
+            <div class="title-text">Error-Correcting Codes for Two Bursts of (t1, t2)-DI with Low Complexity</div>
+            <div class="author-text">Y. Liu, T. M. Duman (IEEE Fellow)</div>
+            <div class="venue-tag"><b>IEEE / SNIA</b> &bull; 2026 &bull; <i>Bilkent University</i></div>
+          </td>
+          <td class="col-method">Construction of linear-complexity channel error-correcting codes tailored for multi-burst deletion and insertion occurrences.</td>
+          <td class="col-findings">Provides sub-logarithmic redundancy overhead while guaranteeing exact packet alignment and synchronization under burst drops.</td>
+          <td class="col-relevance">
+            <div class="gap-block"><span class="badge-gap">GAP</span> Purely theoretical formulation without software UI.</div>
+            <div class="helix-block"><span class="badge-helix">HELIXVAULT</span> Implements packetized oligo headers with Reed-Solomon parity to counter burst synthesis-dropout anomalies.</div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="col-num">4</td>
+          <td class="col-title">
+            <div class="title-text">Error-Correcting Codes for the Sum Channel</div>
+            <div class="author-text">L. Abboud, E. Yaakobi</div>
+            <div class="venue-tag"><b>ResearchGate / ISIT</b> &bull; 2026 &bull; <i>Technion - Israel Inst. of Tech.</i></div>
+          </td>
+          <td class="col-method">Sum channel matrix algebraic modeling with parity-sum rows for distributed matrix-encoded storage pools.</td>
+          <td class="col-findings">Constructs two-deletion-correcting matrix codes with optimal redundancy bounds 2*ceil(log2 log2 n) + log2 l.</td>
+          <td class="col-relevance">
+            <div class="gap-block"><span class="badge-gap">GAP</span> Focuses strictly on matrix channel abstractions.</div>
+            <div class="helix-block"><span class="badge-helix">HELIXVAULT</span> Employs horizontal/vertical parity rows to reconstruct missing oligo fragments without re-synthesizing the whole pool.</div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td class="col-num">5</td>
+          <td class="col-title">
+            <div class="title-text">Expected Recovery Time in DNA-based Distributed Storage Systems</div>
+            <div class="author-text">A. Levy, R. Con, E. Yaakobi, H. M. Kiah</div>
+            <div class="venue-tag"><b>RSC Advances / IEEE</b> &bull; 2026 &bull; <i>Technion & NTU Singapore</i></div>
+          </td>
+          <td class="col-method">Erasure-coded multi-container biological architecture with statistical sampling distribution analysis.</td>
+          <td class="col-findings">Derives exact mathematical expectations for random read sampling needed to rebuild damaged or decayed storage containers.</td>
+          <td class="col-relevance">
+            <div class="gap-block"><span class="badge-gap">GAP</span> Lacks automated physical lab protocols.</div>
+            <div class="helix-block"><span class="badge-helix">HELIXVAULT</span> Combines multi-carrier BioDatabase indexing with dynamic freezer S.O.P. generation (Rack/Box/Tube assignments).</div>
+          </td>
+        </tr>
+        
+      </tbody>
+    </table>
+    <div class="table-footer">
+      <span>HelixVault Biological Data Preservation &mdash; Literature Review</span>
+      <span>Peer-Reviewed Benchmark Analysis</span>
+    </div>
+  </div>
+</body>
+</html>

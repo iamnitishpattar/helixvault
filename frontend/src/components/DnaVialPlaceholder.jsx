@@ -302,7 +302,7 @@ export default function DnaVialPlaceholder({ loading = false, progressStage = 0,
       </div>
 
       {/* Status Typography & Holographic Pill Badge */}
-      <div style={{ textAlign: 'center', marginTop: '0.75rem', zIndex: 2 }}>
+      <div style={{ textAlign: 'center', marginTop: '0.75rem', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
         {loading ? (
           <div style={{
             display: 'inline-flex',
@@ -354,11 +354,12 @@ export default function DnaVialPlaceholder({ loading = false, progressStage = 0,
         )}
 
         <p style={{
-          fontSize: '0.78rem',
-          color: loading ? 'var(--text-secondary)' : 'rgba(255, 255, 255, 0.35)',
-          marginTop: '0.6rem',
-          maxWidth: '280px',
-          lineHeight: 1.5
+          fontSize: '0.82rem',
+          color: loading ? 'var(--text-secondary)' : 'rgba(255, 255, 255, 0.45)',
+          margin: '0.75rem auto 0 auto',
+          maxWidth: '340px',
+          textAlign: 'center',
+          lineHeight: 1.6
         }}>
           {loading 
             ? 'Translating digital bits into a physical biological sequence...'

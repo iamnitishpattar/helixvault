@@ -14,6 +14,22 @@ import SkeletonLoader from '../components/SkeletonLoader';
 const ChartWrapper = lazy(() => import('../components/ChartWrapper'));
 const API_KEY_ERROR = 'Unable to update API keys right now. Please try again later.';
 
+const formatBp = (bp) => {
+  if (!bp && bp !== 0) return '0 bp';
+  if (bp >= 1_000_000_000) return `${(bp / 1_000_000_000).toFixed(2)} Gbp`;
+  if (bp >= 1_000_000) return `${(bp / 1_000_000).toFixed(2)} Mbp`;
+  if (bp >= 1_000) return `${(bp / 1_000).toFixed(1)} kbp`;
+  return `${bp.toLocaleString()} bp`;
+};
+
+const formatCost = (cost) => {
+  if (!cost && cost !== 0) return '$0';
+  if (cost >= 1_000_000_000) return `$${(cost / 1_000_000_000).toFixed(2)}B`;
+  if (cost >= 1_000_000) return `$${(cost / 1_000_000).toFixed(1)}M`;
+  if (cost >= 1_000) return `$${(cost / 1_000).toFixed(1)}k`;
+  return `$${cost.toLocaleString()}`;
+};
+
 function Dashboard() {
   const { user } = useAuth();
   const [chartData, setChartData] = useState([]);
@@ -169,43 +185,141 @@ function Dashboard() {
         </SpotlightCard>
 
         {user ? (
-          <SpotlightCard className="showcase-card" spotlightColor="rgba(255, 255, 255, 0.05)">
-            <h3>Your Vault Stats</h3>
-          {statsLoading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
-              <SkeletonLoader height="20px" />
-              <SkeletonLoader height="20px" />
-              <SkeletonLoader height="20px" />
+          <SpotlightCard className="showcase-card" spotlightColor="rgba(255, 255, 255, 0.05)" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Your Vault Stats</h3>
+              <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: 'rgba(0, 255, 102, 0.1)', border: '1px solid rgba(0, 255, 102, 0.25)', color: 'var(--accent-green)', fontWeight: 600 }}>
+                Active Vault
+              </span>
             </div>
-          ) : !userStats || userStats.total_files === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem 0' }}>
-              <Database size={32} style={{ opacity: 0.3, margin: '0 auto' }} />
-              <p style={{ fontSize: '0.85rem' }}>No sequences encoded yet.<br/>Start by encoding a file!</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="text-muted"><Activity size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.5rem' }}/>Files Encoded</span>
-                <strong style={{ color: 'var(--accent-cyan)' }}>{userStats.total_files}</strong>
+
+            {statsLoading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <SkeletonLoader height="65px" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  <SkeletonLoader height="55px" />
+                  <SkeletonLoader height="55px" />
+                  <SkeletonLoader height="55px" />
+                  <SkeletonLoader height="55px" />
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="text-muted"><Cpu size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.5rem' }}/>Total Base Pairs</span>
-                <strong>{userStats.total_bp_encoded?.toLocaleString()} bp</strong>
+            ) : !userStats || userStats.total_files === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>
+                <Database size={36} style={{ opacity: 0.3, margin: '0 auto' }} />
+                <p style={{ fontSize: '0.85rem', margin: 0 }}>No sequences encoded yet.<br/>Start by encoding a file!</p>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="text-muted"><TrendingUp size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.5rem' }}/>Avg GC Content</span>
-                <strong style={{ color: 'var(--accent-green)' }}>{userStats.avg_gc_content}%</strong>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.25rem' }}>
+                {/* Hero Primary Metric: Total Base Pairs */}
+                <div 
+                  style={{
+                    background: 'rgba(0, 204, 255, 0.04)',
+                    border: '1px solid rgba(0, 204, 255, 0.18)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '0.85rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem'
+                  }}
+                  title={`${userStats.total_bp_encoded?.toLocaleString()} base pairs`}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+                    <Cpu size={14} color="var(--accent-cyan)" />
+                    <span>Total Base Pairs Stored</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '1.55rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                      {formatBp(userStats.total_bp_encoded)}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      ({userStats.total_bp_encoded?.toLocaleString()} bp)
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2x2 Clean Metric Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  {/* Files Encoded */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <Activity size={13} color="var(--accent-cyan)" />
+                      <span style={{ whiteSpace: 'nowrap' }}>Files Encoded</span>
+                    </div>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent-cyan)', lineHeight: 1 }}>
+                      {userStats.total_files}
+                    </span>
+                  </div>
+
+                  {/* Avg GC Content */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <TrendingUp size={13} color="var(--accent-green)" />
+                      <span style={{ whiteSpace: 'nowrap' }}>Avg GC Content</span>
+                    </div>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent-green)', lineHeight: 1 }}>
+                      {userStats.avg_gc_content}%
+                    </span>
+                  </div>
+
+                  {/* AES Encrypted */}
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <Shield size={13} color="var(--accent-purple)" />
+                      <span style={{ whiteSpace: 'nowrap' }}>Encrypted</span>
+                    </div>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent-purple)', lineHeight: 1 }}>
+                      {userStats.files_encrypted} <span style={{ fontSize: '0.72rem', fontWeight: 400, color: 'var(--text-muted)' }}>files</span>
+                    </span>
+                  </div>
+
+                  {/* Est. Synthesis Cost */}
+                  <div 
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem'
+                    }}
+                    title={`$${userStats.total_synthesis_cost_usd?.toLocaleString()} estimated synthesis cost`}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <Zap size={13} color="var(--accent-gold)" />
+                      <span style={{ whiteSpace: 'nowrap' }}>Synthesis Cost</span>
+                    </div>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--accent-gold)', lineHeight: 1 }}>
+                      {formatCost(userStats.total_synthesis_cost_usd)}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="text-muted"><Shield size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.5rem' }}/>AES Encrypted</span>
-                <strong style={{ color: 'var(--accent-purple)' }}>{userStats.files_encrypted} files</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                <span className="text-muted"><Zap size={16} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '0.5rem' }}/>Est. Synthesis Cost</span>
-                <strong style={{ color: 'var(--accent-gold)' }}>${userStats.total_synthesis_cost_usd?.toLocaleString()}</strong>
-              </div>
-            </div>
-          )}
+            )}
           </SpotlightCard>
         ) : (
           <SpotlightCard className="showcase-card flex-center" spotlightColor="rgba(255, 255, 255, 0.05)">

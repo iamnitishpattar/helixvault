@@ -112,7 +112,10 @@ async function _directUpload(file, encodeOptions, onProgress, strategy) {
   if (password) fd.append('password', password);
   fd.append('use_error_correction', useErrorCorrection);
   fd.append('use_steganography', useSteganography);
-  if (useSteganography && carrierAccession) fd.append('steganography_carrier', carrierAccession);
+  if (useSteganography && carrierAccession) {
+    fd.append('steganography_carrier', carrierAccession);
+    fd.append('carrier_accession', carrierAccession);
+  }
   fd.append('use_fountain', useFountain);
   fd.append('fountain_overhead', fountainOverhead);
 
@@ -176,7 +179,7 @@ async function _chunkedUpload(file, encodeOptions, onProgress) {
   // Finalize — assemble chunks on the server and start encoding
   onProgress?.({ percent: 91, stage: 'assembling', strategy: 'chunked', chunksDone, chunksTotal: totalChunks, speedMBs: 0, etaSeconds: null });
 
-  const { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead } = encodeOptions;
+  const { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead, carrierAccession } = encodeOptions;
   const fd = new FormData();
   fd.append('upload_id',            uploadId);
   fd.append('filename',             file.name);
@@ -184,6 +187,10 @@ async function _chunkedUpload(file, encodeOptions, onProgress) {
   if (password) fd.append('password', password);
   fd.append('use_error_correction', useErrorCorrection);
   fd.append('use_steganography',    useSteganography);
+  if (useSteganography && carrierAccession) {
+    fd.append('steganography_carrier', carrierAccession);
+    fd.append('carrier_accession', carrierAccession);
+  }
   fd.append('use_fountain',         useFountain);
   fd.append('fountain_overhead',    fountainOverhead);
 
@@ -258,7 +265,7 @@ async function _s3MultipartUpload(file, encodeOptions, onProgress) {
   // 3. Complete — backend tells S3 to assemble, downloads, triggers encoding
   onProgress?.({ percent: 90, stage: 'assembling', strategy: 's3', chunksDone: totalParts, chunksTotal: totalParts, speedMBs: 0, etaSeconds: null });
 
-  const { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead } = encodeOptions;
+  const { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead, carrierAccession } = encodeOptions;
   const completeFd = new FormData();
   completeFd.append('s3_upload_id',        s3_upload_id);
   completeFd.append('object_key',          object_key);
@@ -267,6 +274,10 @@ async function _s3MultipartUpload(file, encodeOptions, onProgress) {
   if (password) completeFd.append('password', password);
   completeFd.append('use_error_correction', useErrorCorrection);
   completeFd.append('use_steganography',    useSteganography);
+  if (useSteganography && carrierAccession) {
+    completeFd.append('steganography_carrier', carrierAccession);
+    completeFd.append('carrier_accession', carrierAccession);
+  }
   completeFd.append('use_fountain',         useFountain);
   completeFd.append('fountain_overhead',    fountainOverhead);
 

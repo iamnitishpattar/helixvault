@@ -1,9 +1,11 @@
 # 🧬 HelixVault: Next-Gen DNA Data Storage
 
 <div align="center">
+  <a href="https://doi.org/10.5281/zenodo.24339591"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24339591.svg" alt="DOI" /></a>
   <img src="https://img.shields.io/badge/Status-Production-brightgreen" alt="Status" />
   <img src="https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/Backend-FastAPI-009688" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Preprint-Research%20Square%20(Springer)-blue" alt="Preprint" />
 </div>
 
 <br/>
