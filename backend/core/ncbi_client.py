@@ -34,7 +34,7 @@ logger = logging.getLogger("helixvault")
 
 # Credentials & configuration
 ENTREZ_EMAIL = os.getenv("ENTREZ_EMAIL", "nitishpattar7@gmail.com")
-NCBI_API_KEY = os.getenv("NCBI_API_KEY", "4830a368f938af7f607c9e1808867623ea08")
+NCBI_API_KEY = os.getenv("NCBI_API_KEY", "")
 NCBI_TOOL = "HelixVault_Enterprise_DNA"
 
 BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
