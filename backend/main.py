@@ -42,13 +42,16 @@ logger.info("Starting HelixVault Enterprise Backend...")
 # Track server start time for uptime reporting
 SERVER_START_TIME = time.time()
 
-# Create database tables
+# Create database tables with resilient fallback
 try:
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified successfully.")
 except Exception as e:
-    logger.critical(f"FATAL: Could not connect to database! Please check your DATABASE_URL password and credentials in Render/Supabase. Details: {e}")
-    raise
+    logger.warning(f"Primary database connection failed ({e}). Falling back to local SQLite engine...")
+    from db.database import get_sqlite_engine
+    engine = get_sqlite_engine()
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified successfully on fallback SQLite engine.")
 
 app = FastAPI(
     title="HelixVault API",
