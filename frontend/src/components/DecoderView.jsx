@@ -403,23 +403,20 @@ export default function DecoderView() {
     let indelRate = 0;
 
     if (environment === 'freezer') {
-
       errorRate = 0.0001;
-
       indelRate = 0;
-
+    } else if (environment === 'illumina') {
+      errorRate = 0.0025; // 0.25% substitutions (Illumina transition bias)
+      indelRate = 0.00005;
+    } else if (environment === 'nanopore') {
+      errorRate = 0.006;
+      indelRate = 0.022; // 2.2% homopolymer indel slips (Oxford Nanopore R10.4)
     } else if (environment === 'room') {
-
       errorRate = 0.005;
-
       indelRate = 0;
-
     } else if (environment === 'invivo') {
-
       errorRate = 0.01;
-
       indelRate = 0.005; // High indel rate for In Vivo
-
     }
 
 
@@ -1101,9 +1098,9 @@ export default function DecoderView() {
               >
 
                 <option value="freezer">Deep Freeze Archival (-80°C) [Low Error]</option>
-
+                <option value="illumina">Illumina MiSeq [Sequencing Substitution Bias ~0.25%]</option>
+                <option value="nanopore">Oxford Nanopore R10.4.1 [Homopolymer Indel Slips ~2.2%]</option>
                 <option value="room">In Vitro Room Temp [Medium Error]</option>
-
                 <option value="invivo">In Vivo (Living E. coli Cell) [High Error + Indels]</option>
 
               </select>
