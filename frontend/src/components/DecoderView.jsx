@@ -213,8 +213,7 @@ export default function DecoderView() {
   
 
   // Environment Decay Options
-
-  const [environment, setEnvironment] = useState('freezer');
+  const [environment, setEnvironment] = useState('illumina');
 
 
 
@@ -1202,10 +1201,30 @@ export default function DecoderView() {
           </div>
 
         )}
-
       </div>
 
-      
+      {/* Direct Sequencer & Mutation Environment Selector (Always Visible) */}
+      <div style={{ marginBottom: '1.25rem', padding: '1rem', background: 'rgba(255, 0, 85, 0.05)', border: '1px solid rgba(255, 0, 85, 0.25)', borderRadius: 'var(--radius-sm)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <label htmlFor="environment-main" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontSize: '0.88rem', fontWeight: 600 }}>
+            <Thermometer size={16} color="var(--accent-pink)" /> Sequencer & Degradation Error Model
+          </label>
+          <span style={{ fontSize: '0.75rem', color: 'var(--accent-pink)', fontWeight: 500 }}>Select model before clicking Simulate</span>
+        </div>
+        <select 
+          id="environment-main"
+          className="input-glass" 
+          value={environment}
+          onChange={(e) => setEnvironment(e.target.value)}
+          style={{ width: '100%', padding: '0.65rem 0.85rem', fontSize: '0.85rem', background: 'rgba(0,0,0,0.6)', color: '#fff', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '6px', cursor: 'pointer' }}
+        >
+          <option value="illumina">🧬 Illumina MiSeq [Sequencing Substitution Bias ~0.25% (A↔G, C↔T)]</option>
+          <option value="nanopore">⚡ Oxford Nanopore R10.4.1 [Homopolymer Indel Slips ~2.2%]</option>
+          <option value="freezer">❄️ Deep Freeze Archival (-80°C) [Low Cosmic Ray Degradation]</option>
+          <option value="room">🌡️ In Vitro Room Temp [Ambient Hydrolysis ~0.5%]</option>
+          <option value="invivo">🦠 In Vivo Host Mutation [High Replication Error + Indels]</option>
+        </select>
+      </div>
 
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
 
