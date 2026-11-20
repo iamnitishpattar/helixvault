@@ -105,6 +105,7 @@ async function _directUpload(file, encodeOptions, onProgress, strategy) {
   const {
     password, useErrorCorrection, useSteganography,
     useFountain, fountainOverhead, carrierAccession,
+    compressionAlgo,
   } = encodeOptions;
 
   const fd = new FormData();
@@ -118,6 +119,7 @@ async function _directUpload(file, encodeOptions, onProgress, strategy) {
   }
   fd.append('use_fountain', useFountain);
   fd.append('fountain_overhead', fountainOverhead);
+  if (compressionAlgo) fd.append('compression_algo', compressionAlgo);
 
   const res = await axios.post(`${API_BASE_URL}/api/dna/encode`, fd, {
     withCredentials: true,

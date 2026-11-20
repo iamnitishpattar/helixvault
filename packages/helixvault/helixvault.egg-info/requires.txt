@@ -1,0 +1,6 @@
+reedsolo>=1.7.0
+cryptography>=41.0.0
+
+[compression]
+zstandard>=0.22.0
+brotli>=1.1.0

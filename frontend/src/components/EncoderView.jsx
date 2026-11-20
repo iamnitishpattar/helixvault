@@ -90,6 +90,7 @@ export default function EncoderView() {
   const [fountainOverhead, setFountainOverhead] = useState(1.5);
   const [useSteganography, setUseSteganography] = useState(false);
   const [synthesisMethod, setSynthesisMethod] = useState('enzymatic');
+  const [compressionAlgo, setCompressionAlgo] = useState('zstd');
 
   const { selectedCarrier, clearCarrier } = useCarrier();
   const location = useLocation();
@@ -160,7 +161,7 @@ export default function EncoderView() {
       }
       setOriginalFileHash(hash);
 
-      const encodeOptions = { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead, carrierAccession };
+      const encodeOptions = { password, useErrorCorrection, useSteganography, useFountain, fountainOverhead, carrierAccession, compressionAlgo };
 
       const taskResult = await uploadFile(file, encodeOptions, (progress) => {
         setUploadProgress(progress);
@@ -215,6 +216,25 @@ export default function EncoderView() {
       setUploadProgress(null);
       setApiError(getSafeApiErrorMessage(err, ENCODE_ERROR_MESSAGE));
       setLoading(false);
+    }
+  };
+
+  const downloadVendorOrder = async (vendor) => {
+    if (!result || !result.id) return;
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/dna/export/${vendor}/${result.id}`, {
+        responseType: 'blob',
+        withCredentials: true
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${vendor.toUpperCase()}_Order_${result.filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (err) {
+      console.error('Vendor export error:', err);
     }
   };
 
@@ -508,6 +528,37 @@ export default function EncoderView() {
                   </div>
                 )}
               </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label htmlFor="compression-select" style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    ⚡ Pre-Encoding Compression
+                  </label>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 600 }}>Cuts Synthesis Cost 40-70%</span>
+                </div>
+                <select
+                  id="compression-select"
+                  value={compressionAlgo}
+                  onChange={(e) => setCompressionAlgo(e.target.value)}
+                  style={{
+                    background: 'rgba(0,0,0,0.5)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '4px',
+                    padding: '0.5rem',
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="zstd">Zstandard (Recommended — Meta Zstd, 60% smaller)</option>
+                  <option value="brotli">Brotli (Google Brotli — Best for documents/text)</option>
+                  <option value="gzip">Gzip (Universal zlib standard)</option>
+                  <option value="none">None (Raw uncompressed binary)</option>
+                </select>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  Compresses payload bytes before Base-3 translation, reducing synthesized nucleotide length and lab synthesis pricing.
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -721,6 +772,22 @@ export default function EncoderView() {
                 onClick={() => downloadFromServer(result.id, 'genbank', `${result.filename}.gb`, API_BASE_URL, axios)}
               >
                 <Download size={16} /> GenBank
+              </button>
+              <button 
+                type="button"
+                className="btn" 
+                style={{ flex: '1 1 45%', justifyContent: 'center', background: 'rgba(0, 204, 255, 0.08)', color: 'var(--accent-cyan)', border: '1px solid rgba(0, 204, 255, 0.3)' }}
+                onClick={() => downloadVendorOrder('twist')}
+              >
+                <Download size={16} /> Twist 96-Well CSV
+              </button>
+              <button 
+                type="button"
+                className="btn" 
+                style={{ flex: '1 1 45%', justifyContent: 'center', background: 'rgba(255, 170, 0, 0.08)', color: 'var(--accent-gold)', border: '1px solid rgba(255, 170, 0, 0.3)' }}
+                onClick={() => downloadVendorOrder('idt')}
+              >
+                <Download size={16} /> IDT Plate Spec
               </button>
               <button 
                 type="button"

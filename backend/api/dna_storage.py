@@ -73,6 +73,9 @@ ALLOWED_MIME_TYPES = {
 TASK_TTL_SECONDS = 600  # tasks expire after 10 minutes
 
 from core.encoder import encode_data_to_dna, decode_dna_to_data
+from core.compression import compress_payload, decompress_payload
+from core.vendor_export import generate_twist_order_csv, generate_idt_plate_csv
+from core.sequencer_noise import simulate_sequencer_noise
 
 from core.bio_utils import (
 
@@ -197,23 +200,17 @@ def _validate_upload(contents: bytes, content_type: Optional[str], filename: str
         )
 
 def process_encode(task_id: str, contents: bytes, filename: str, password: Optional[str], 
-
                    use_error_correction: bool, use_steganography: bool, user_id: int, use_fountain: bool = False, fountain_overhead: float = 1.5,
-
-                   carrier_accession: Optional[str] = None):
-
+                   carrier_accession: Optional[str] = None, compression_algo: str = "zstd"):
     try:
-
-        logger.info(f"Task {task_id}: Starting encoding for {filename}")
-
+        logger.info(f"Task {task_id}: Starting encoding for {filename} (compression={compression_algo})")
         original_size = len(contents)
 
+        contents, comp_metrics = compress_payload(contents, algorithm=compression_algo)
+
         if password:
-
             contents = encrypt_data(contents, password)
-
             
-
         contents = apply_media_compression(contents, filename)
 
             
@@ -287,19 +284,13 @@ def process_encode(task_id: str, contents: bytes, filename: str, password: Optio
             db.close()
 
         task_store[task_id] = {
-
             "status": "success",
-
             "filename": filename,
-
             "dna_sequence_preview": dna_seq[:2000],
-
             "metrics": metrics,
-
+            "compression": comp_metrics,
             "biosecurity_report": biosecurity_report,
-
             "id": file_id
-
         }
 
         
@@ -398,6 +389,7 @@ def process_decode(task_id: str, contents: bytes, filename: str, password: Optio
 
             
 
+        data_bytes = decompress_payload(data_bytes)
         data_bytes = remove_media_compression(data_bytes)
 
         if password:
@@ -471,24 +463,16 @@ async def encode_file(
     carrier_accession: Optional[str] = Form(None),
 
     steganography_carrier: Optional[str] = Form(None),
-
+    compression_algo: str = Form("zstd", description="Compression algorithm: zstd, brotli, gzip, or none"),
     current_user: User = Depends(get_current_user)
-
 ):
-
     effective_carrier = carrier_accession or steganography_carrier
-
     contents = await file.read()
-
     _validate_upload(contents, file.content_type, file.filename or "")
-
     _cleanup_expired_tasks()
-
     task_id = str(uuid.uuid4())
-
     task_store[task_id] = {"status": "processing", "created_at": time.time()}
-
-    background_tasks.add_task(process_encode, task_id, contents, file.filename or "unknown", password, use_error_correction, use_steganography, int(current_user.id), use_fountain, fountain_overhead, effective_carrier)  # type: ignore
+    background_tasks.add_task(process_encode, task_id, contents, file.filename or "unknown", password, use_error_correction, use_steganography, int(current_user.id), use_fountain, fountain_overhead, effective_carrier, compression_algo)  # type: ignore
 
     return {"task_id": task_id, "status": "processing"}
 
@@ -762,10 +746,75 @@ def delete_dna_file(
         
 
     db.delete(file)
-
     db.commit()
-
-    
-
     return {"status": "success", "message": "File successfully deleted from vault"}
+
+
+@router.post("/export/twist")
+def export_twist_order(payload: dict):
+    sequence = payload.get("sequence", "")
+    filename = payload.get("filename", "HelixVault_Sequence")
+    if not sequence:
+        raise HTTPException(status_code=400, detail="DNA sequence is required")
+    csv_content = generate_twist_order_csv(sequence, payload_name=filename.replace(".", "_"))
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=Twist_{filename}.csv"}
+    )
+
+
+@router.post("/export/idt")
+def export_idt_order(payload: dict):
+    sequence = payload.get("sequence", "")
+    filename = payload.get("filename", "HelixVault_Sequence")
+    if not sequence:
+        raise HTTPException(status_code=400, detail="DNA sequence is required")
+    csv_content = generate_idt_plate_csv(sequence, payload_name=filename.replace(".", "_"))
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=IDT_{filename}.csv"}
+    )
+
+
+@router.get("/export/twist/{file_id}")
+def export_vault_file_twist(file_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    file = db.query(EncodedFile).filter(EncodedFile.id == file_id, EncodedFile.user_id == current_user.id).first()
+    if not file or not file.dna_sequence:
+        raise HTTPException(status_code=404, detail="File or DNA sequence not found")
+    csv_content = generate_twist_order_csv(file.dna_sequence, payload_name=file.filename.replace(".", "_"))
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=Twist_{file.filename}.csv"}
+    )
+
+
+@router.get("/export/idt/{file_id}")
+def export_vault_file_idt(file_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    file = db.query(EncodedFile).filter(EncodedFile.id == file_id, EncodedFile.user_id == current_user.id).first()
+    if not file or not file.dna_sequence:
+        raise HTTPException(status_code=404, detail="File or DNA sequence not found")
+    csv_content = generate_idt_plate_csv(file.dna_sequence, payload_name=file.filename.replace(".", "_"))
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=IDT_{file.filename}.csv"}
+    )
+
+
+@router.post("/simulate-noise")
+def simulate_noise_api(payload: dict):
+    sequence = payload.get("sequence", "")
+    model = payload.get("model", "illumina_miseq")
+    if not sequence:
+        raise HTTPException(status_code=400, detail="DNA sequence is required")
+    mutated_seq, stats = simulate_sequencer_noise(sequence, model=model)
+    return {
+        "status": "success",
+        "mutated_sequence": mutated_seq,
+        "stats": stats
+    }
+
 

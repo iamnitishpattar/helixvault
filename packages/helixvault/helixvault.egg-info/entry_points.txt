@@ -1,0 +1,2 @@
+[console_scripts]
+helixvault = helixvault.cli:main
