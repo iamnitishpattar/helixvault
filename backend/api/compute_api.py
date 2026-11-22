@@ -1,7 +1,10 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger("helixvault")
 
 from db.database import get_db
 from db.models import User
