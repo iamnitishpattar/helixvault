@@ -62,7 +62,7 @@ def simulate_sequencer_noise(sequence: str, model: str = "illumina_miseq") -> Tu
     
     if model_key == "illumina_miseq":
         sub_rate = 0.0025  # 0.25%
-        indel_rate = 0.00005 # Almost zero indels in Illumina
+        indel_rate = 0.0     # Pure substitution errors (Illumina SBS has 0 indels)
         ti_bias = 0.75
     elif model_key == "oxford_nanopore_r10":
         sub_rate = 0.006   # 0.6% substitutions

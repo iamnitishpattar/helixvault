@@ -405,8 +405,8 @@ export default function DecoderView() {
       errorRate = 0.0001;
       indelRate = 0;
     } else if (environment === 'illumina') {
-      errorRate = 0.0025; // 0.25% substitutions (Illumina transition bias)
-      indelRate = 0.00005;
+      errorRate = 0.0025; // 0.25% substitutions (Illumina SBS transition bias)
+      indelRate = 0;      // Zero indels in real Illumina SBS (pure substitutions)
     } else if (environment === 'nanopore') {
       errorRate = 0.006;
       indelRate = 0.022; // 2.2% homopolymer indel slips (Oxford Nanopore R10.4)

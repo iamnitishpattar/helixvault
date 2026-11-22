@@ -236,3 +236,8 @@ def extract_from_host(embedded_sequence: str) -> str:
         return embedded_sequence[start_idx:]
 
     return embedded_sequence[start_idx:end_idx]
+
+
+# Backward compatibility aliases for legacy scripts and CI
+embed_payload = embed_in_host
+extract_payload = extract_from_host

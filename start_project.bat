@@ -6,7 +6,7 @@ echo =========================================================
 echo.
 
 echo [1/2] Starting HelixVault Backend (FastAPI on Port 8000)...
-start "HelixVault Backend (FastAPI)" cmd /k "cd /d %~dp0backend && .\venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+start "HelixVault Backend (FastAPI)" cmd /k "cd /d %~dp0backend && (if exist .\.venv\Scripts\python.exe (.\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload) else (.\venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload))"
 
 echo [2/2] Starting HelixVault Frontend (Vite React)...
 start "HelixVault Frontend (Vite React)" cmd /k "cd /d %~dp0frontend && npm run dev"

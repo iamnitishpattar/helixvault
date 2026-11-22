@@ -139,3 +139,8 @@ def decode_dna_to_data(dna_seq: str) -> Tuple[bytes, str]:
 
     return bytes(data), filename
 
+
+
+# Backward compatibility aliases for legacy scripts and CI
+encode_to_dna = encode_data_to_dna
+decode_from_dna = decode_dna_to_data
