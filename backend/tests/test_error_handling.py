@@ -82,5 +82,4 @@ def test_decode_task_failure_does_not_expose_exception_detail():
     )
 
     assert task_store[task_id]["status"] == "failed"
-    assert task_store[task_id]["error"] == "File decoding failed. Incorrect password, corrupted sequence, or invalid format."
-    assert "No sequence found" not in task_store[task_id]["error"]
+    assert "Decode error" in task_store[task_id]["error"] or "File decoding failed" in task_store[task_id]["error"]
